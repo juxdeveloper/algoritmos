@@ -376,3 +376,225 @@ body {
   font-weight: 700;
 }
 
+/* Bars canvas */
+.bars-canvas-container {
+  padding: 1.5rem 1.25rem;
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.bars-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  height: 280px;
+  width: 100%;
+}
+
+.bar-col {
+  flex: 1;
+  max-width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.bar-tag-top {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  margin-bottom: 4px;
+  opacity: 0.9;
+}
+
+.bar-element {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, transform 0.2s ease;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-bottom: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.bar-element.comparing {
+  transform: translateY(-8px);
+  box-shadow: 0 0 16px var(--accent-warning);
+}
+
+.bar-element.swapping {
+  transform: translateY(-12px) scale(1.05);
+  box-shadow: 0 0 20px var(--accent-danger);
+}
+
+.bar-val-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.bar-index-bottom {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Step Narrative Card */
+.step-narrative {
+  padding: 1rem 1.25rem;
+  background: var(--bg-surface-elevated);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.step-narrative-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.step-narrative-header h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+.step-narrative p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* Side Info & Theory Column */
+.side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.metric-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.metric-box {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.metric-box .label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metric-box .val {
+  font-size: 1.2rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.metric-box .sub {
+  font-size: 0.68rem;
+  color: var(--accent-cyan);
+}
+
+/* Complexity Specs */
+.algo-specs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.algo-specs-table tr {
+  border-bottom: 1px solid var(--border-subtle);
+}
+.algo-specs-table tr:last-child {
+  border-bottom: none;
+}
+
+.algo-specs-table td {
+  padding: 0.45rem 0;
+}
+.algo-specs-table td:first-child {
+  color: var(--text-muted);
+  width: 45%;
+}
+.algo-specs-table td:last-child {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+/* Code Viewer */
+.code-viewer-container {
+  background: #050811;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
+.code-viewer-header {
+  background: var(--bg-surface-elevated);
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.code-lines {
+  padding: 0.75rem 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.code-line {
+  padding: 0.2rem 0.85rem;
+  display: flex;
+  gap: 0.75rem;
+  white-space: pre;
+}
+
+.code-line.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-left: 3px solid var(--accent-cyan);
+  color: #fff;
+}
+
+.line-no {
+  color: var(--text-muted);
+  user-select: none;
+  width: 20px;
+  text-align: right;
+}
+

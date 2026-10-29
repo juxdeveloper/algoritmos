@@ -1,0 +1,169 @@
+% Reporte Académico Oficial - Proyecto: Algoritmos de Ordenamiento Paralelos
+% Curso: Estructuras de Datos y Algoritmos II (EDA II)
+% Facultad de Ingeniería, UNAM - Semestre 2026-1 / 2027-1
+% Grupo 11 - Profesor: M.I. José Rodrigo Moreno López
+\documentclass[11pt,letterpaper,oneside]{article}
+\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\addto\captionsspanish{\renewcommand{\tablename}{Tabla}}
+
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{tgpagella}
+\else
+  \usepackage{fontspec}
+  \IfFontExistsTF{texgyrepagella-regular.otf}{
+    \setmainfont{texgyrepagella-regular.otf}[
+      BoldFont=texgyrepagella-bold.otf,
+      ItalicFont=texgyrepagella-italic.otf,
+      BoldItalicFont=texgyrepagella-bolditalic.otf]
+  }{
+    \setmainfont{DejaVu Serif}
+  }
+\fi
+
+\usepackage[margin=2.5cm,headheight=15pt]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx,pdfpages}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{needspace}
+\usepackage{fancyhdr}
+\usepackage[hidelinks,unicode]{hyperref}
+
+\hypersetup{
+  pdftitle={Proyecto: Algoritmos de Ordenamiento Paralelos},
+  pdfauthor={Angel Joseph Estrada Santos, Hanniel Cardoso Jaramillo, Luis Ricardo Mondragon Zuniga},
+  pdfsubject={Estructuras de Datos y Algoritmos II - UNAM FI}
+}
+
+\graphicspath{{figuras/}}
+\setlength{\parindent}{1.2em}
+\setlength{\parskip}{0.25em}
+\setlength{\emergencystretch}{2em}
+\setlist[itemize]{topsep=4pt,itemsep=3pt,leftmargin=*}
+\captionsetup{font=small,labelfont=bf}
+\widowpenalty=10000
+\clubpenalty=10000
+\displaywidowpenalty=10000
+\raggedbottom
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small EDA II · Proyecto Especial}
+\fancyhead[R]{\small Algoritmos de Ordenamiento Paralelos}
+\fancyfoot[C]{\thepage}
+
+\DeclareRobustCommand{\archivo}[1]{\texttt{\detokenize{#1}}}
+\pdfstringdefDisableCommands{\def\archivo#1{\detokenize{#1}}}
+
+\begin{document}
+
+% Inclusión de la carátula oficial de la Facultad de Ingeniería
+\ifdefined\PortadaPDF
+  \IfFileExists{\PortadaPDF}{%
+    \hypersetup{pageanchor=false}
+    \includepdf[pages=1,pagecommand={\thispagestyle{empty}}]{\PortadaPDF}
+    \hypersetup{pageanchor=true}
+  }{}
+\else
+  \IfFileExists{portada.pdf}{%
+    \hypersetup{pageanchor=false}
+    \includepdf[pages=1,pagecommand={\thispagestyle{empty}}]{portada.pdf}
+    \hypersetup{pageanchor=true}
+  }{}
+\fi
+
+\pagenumbering{arabic}
+\hypersetup{pageanchor=true}
+
+\begin{center}
+  {\Large\bfseries Algoritmos de Ordenamiento Paralelos:}\par
+  \smallskip
+  {\Large\bfseries Simulación Interactiva y Análisis de Escalabilidad}\par
+  \medskip
+  {\large Proyecto de Simulación · EDA II · MADO}\par
+  \bigskip
+  \textbf{Integrantes del Equipo (PR \#27):}\par
+  \smallskip
+  Angel Joseph Estrada Santos · Cuenta \textbf{120002850}\par
+  Hanniel Cardoso Jaramillo · Cuenta \textbf{426059576}\par
+  Luis Ricardo Mondragón Zúñiga · Cuenta \textbf{323214636}\par
+  \medskip
+  Profesor: M.I. José Rodrigo Moreno López · Grupo 11\par
+  Facultad de Ingeniería, Universidad Nacional Autónoma de México\par
+  \smallskip
+  \small Preparación y despliegue: 29 de octubre de 2026, America/Mexico\_City.\par
+  Sitio web público: \url{https://juxdeveloper.github.io/algoritmos/}
+\end{center}
+
+\begin{abstract}
+El ordenamiento paralelo constituye una de las áreas fundamentales del cómputo de alto rendimiento, donde la concurrencia permite trascender la cota secuencial inferior de comparaciones $\Omega(n \log n)$ en términos de tiempo de ejecución (lapso o \emph{span}). En este trabajo se presenta el diseño, fundamentación matemática e implementación de un laboratorio interactivo desarrollado en React y HTML5 que ilustra, paso a paso y de forma intuitiva, ocho algoritmos de ordenamiento paralelos representativos de diversos paradigmas de hardware (PRAM, redes de comparadores, mallas bidimensionales, arquitecturas de memoria compartida y memoria distribuida con paso de mensajes). Se analizan detalladamente el trabajo $T_1$, la profundidad $T_\infty$, el \emph{speedup} teórico y real, las barreras de sincronización y las restricciones de concurrencia impuestas por el GIL (\emph{Global Interpreter Lock}) en CPython. La plataforma se encuentra desplegada públicamente mediante GitHub Actions en GitHub Pages y versionada en el PR \#27 del repositorio oficial del curso.
+\end{abstract}
+
+\tableofcontents
+\medskip
+
+\section{Objetivos del Proyecto}
+\begin{itemize}
+  \item Desarrollar una aplicación web interactiva en React que modele fielmente la ejecución paralela síncrona y asíncrona de los principales algoritmos de ordenamiento, facilitando la comprensión intuitiva de la sincronización entre procesadores.
+  \item Implementar generadores deterministas de pasos de ejecución para ocho algoritmos paralelos: \emph{Bitonic Sort}, \emph{Odd-Even Transposition Sort}, \emph{Parallel QuickSort}, \emph{Parallel MergeSort}, \emph{Sample Sort}, \emph{Parallel Radix Sort}, \emph{Shearsort} y \emph{Parallel Bucket Sort}.
+  \item Integrar vistas complementarias en tiempo real: barras con asignación de núcleos, trazado de redes de comparadores de Batcher, diagramas de Gantt con barreras de sincronización y representaciones topológicas (mallas 2D, árboles Fork-Join y cubetas de dispersión).
+  \item Contrastar empíricamente la aceleración teórica predicha por la Ley de Amdahl y el Teorema de Brent con las restricciones del modelo de procesos de CPython frente al uso de hilos (\emph{threading} vs. \emph{multiprocessing}).
+  \item Configurar un flujo de integración continua (CI/CD) con GitHub Actions para compilar y desplegar automáticamente el simulador en GitHub Pages ante cualquier actualización en la rama \archivo{simulacion}.
+\end{itemize}
+
+\section{Fundamentos Teóricos del Cómputo Paralelo}
+
+\subsection{El modelo PRAM y medidas de complejidad}
+El modelo teórico estándar para algoritmos paralelos es la máquina de acceso aleatorio paralelo (PRAM, por sus siglas en inglés)~\cite{ja-ja}. Se compone de $p$ procesadores homogéneos sincronizados que operan sobre un espacio global de memoria. Según las políticas de lectura y escritura simultáneas, se clasifica en:
+\begin{itemize}
+  \item \textbf{EREW} (\emph{Exclusive Read, Exclusive Write}): Ningún par de procesadores puede acceder concurrentemente a la misma celda de memoria. Es el modelo más restrictivo pero más reproducible físicamente.
+  \item \textbf{CREW} (\emph{Concurrent Read, Exclusive Write}): Múltiples procesadores pueden leer simultáneamente la misma posición, pero las escrituras son estrictamente exclusivas.
+  \item \textbf{CRCW} (\emph{Concurrent Read, Concurrent Write}): Permite lecturas y escrituras simultáneas, resolviendo colisiones mediante prioridades (\emph{Priority}), valores comunes (\emph{Common}) o elecciones arbitrarias (\emph{Arbitrary}).
+\end{itemize}
+
+Para caracterizar el rendimiento de un algoritmo paralelo sobre una entrada de tamaño $n$ con $p$ procesadores, se definen:
+\begin{itemize}
+  \item \textbf{Trabajo} ($T_1$): Número total de operaciones elementales ejecutadas por un solo procesador (equivalente al tiempo de ejecución secuencial).
+  \item \textbf{Lapso o Profundidad} ($T_\infty$): Tiempo de ejecución con un número ilimitado de procesadores, determinado por la ruta crítica de dependencias de datos.
+  \item \textbf{Aceleración o Speedup} ($S_p$): Razón entre el tiempo secuencial y el tiempo paralelo con $p$ procesadores:
+  \begin{equation}
+    S_p = \frac{T_1}{T_p} \le p.
+    \label{eq:speedup}
+  \end{equation}
+  \item \textbf{Eficiencia} ($E_p$): Fracción de utilización de los recursos computacionales asignados:
+  \begin{equation}
+    E_p = \frac{S_p}{p} = \frac{T_1}{p \cdot T_p} \le 1.
+    \label{eq:eficiencia}
+  \end{equation}
+\end{itemize}
+
+\subsection{Teorema de Brent y Ley de Amdahl}
+El \textbf{Teorema de Brent}~\cite{brent} establece una cota constructiva fundamental para programar un cálculo paralelo con trabajo $T_1$ y profundidad $T_\infty$ sobre una máquina finita de $p$ núcleos:
+\begin{equation}
+  \frac{T_1}{p} \le T_p \le \frac{T_1 - T_\infty}{p} + T_\infty < \frac{T_1}{p} + T_\infty.
+  \label{eq:brent}
+\end{equation}
+Si el número de procesadores $p$ es pequeño frente a la cantidad de trabajo ($p \ll T_1 / T_\infty$), el término $T_1/p$ domina y se obtiene aceleración lineal perfecta ($S_p \approx p$). Por el contrario, cuando $p \to \infty$, el tiempo converge asintóticamente a la ruta crítica $T_\infty$.
+
+Por su parte, la \textbf{Ley de Amdahl}~\cite{amdahl} delimita el límite superior de aceleración en función de la fracción estrictamente secuencial ($s = 1 - f$) de un programa, donde $f \in [0, 1]$ representa la porción paralelizable:
+\begin{equation}
+  S(p) = \frac{1}{(1 - f) + \dfrac{f}{p}} \quad \implies \quad S_\infty = \lim_{p \to \infty} S(p) = \frac{1}{1 - f}.
+  \label{eq:amdahl}
+\end{equation}
+Si el 20\% de un algoritmo es serial ($s = 0.20$), el \emph{speedup} máximo alcanzable en cualquier supercomputadora con infinitos núcleos es estrictamente $S_\infty = 1 / 0.20 = 5\times$. Este principio rige directamente el diseño de particionadores en QuickSort y combinadores en MergeSort.
+
+\subsection{Redes de comparadores y el Principio Cero-Uno}
+Una red de clasificación está constituida por cables horizontales que transportan datos y compuertas verticales de comparación-intercambio (\emph{compare-exchange}) que operan simultáneamente en instantes discretos~\cite{knuth3}. A diferencia de los algoritmos basados en ramas de control, una red es \textbf{independiente de los datos} (\emph{data-oblivious}): las comparaciones se ejecutan en posiciones predefinidas sin importar los valores numéricos.
+
+El \textbf{Principio Cero-Uno de Knuth} establece que:
+\begin{quote}
+\emph{«Si una red de comparadores ordena correctamente todas las $2^n$ secuencias posibles formadas únicamente por ceros y unos, entonces ordenará correctamente cualquier secuencia de $n$ elementos arbitrarios ordenables.»}
+\end{quote}
+Este teorema simplifica formalmente la verificación de redes como Bitonic Sort y Odd-Even Transposition.
+
+\end{document}

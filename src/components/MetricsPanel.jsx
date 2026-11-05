@@ -3,7 +3,7 @@ import { Cpu, Zap, Activity, ShieldCheck, Gauge, Layers, Info } from 'lucide-rea
 import { PARALLEL_ALGORITHMS } from '../algorithms';
 
 export default function MetricsPanel({ selectedAlgo, step, numWorkers, arraySize }) {
-  const algo = PARALLEL_ALGORITHMS[selectedAlgo] || PARALLEL_ALGORITHMS.bitonic;
+  const algo = PARALLEL_ALGORITHMS[selectedAlgo] || PARALLEL_ALGORITHMS.mergesort;
 
   if (!step) {
     return (
@@ -31,16 +31,8 @@ export default function MetricsPanel({ selectedAlgo, step, numWorkers, arraySize
       const sp = Math.min(numWorkers, arraySize / 2);
       theoreticalSpeedup = `${sp.toFixed(1)}x`;
       efficiency = `${Math.round((sp / numWorkers) * 100)}%`;
-    } else if (selectedAlgo === 'oddeven') {
-      const sp = Math.min(numWorkers, arraySize / 2);
-      theoreticalSpeedup = `${sp.toFixed(1)}x`;
-      efficiency = `${Math.round((sp / numWorkers) * 100)}%`;
     } else if (selectedAlgo === 'quicksort') {
       const sp = Math.min(numWorkers, Math.log2(numWorkers + 1) * 1.5);
-      theoreticalSpeedup = `${sp.toFixed(1)}x`;
-      efficiency = `${Math.round((sp / numWorkers) * 100)}%`;
-    } else if (selectedAlgo === 'shearsort') {
-      const sp = Math.min(numWorkers, Math.sqrt(arraySize));
       theoreticalSpeedup = `${sp.toFixed(1)}x`;
       efficiency = `${Math.round((sp / numWorkers) * 100)}%`;
     } else {

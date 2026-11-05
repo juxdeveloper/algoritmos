@@ -3,7 +3,7 @@ import { Code2, Copy, Check } from 'lucide-react';
 import { PARALLEL_ALGORITHMS } from '../algorithms';
 
 export default function CodeViewer({ selectedAlgo, activeLine }) {
-  const algo = PARALLEL_ALGORITHMS[selectedAlgo] || PARALLEL_ALGORITHMS.bitonic;
+  const algo = PARALLEL_ALGORITHMS[selectedAlgo] || PARALLEL_ALGORITHMS.mergesort;
   const codeLines = algo.code || [];
   const [copied, setCopied] = useState(false);
 

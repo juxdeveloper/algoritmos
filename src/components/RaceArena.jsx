@@ -11,12 +11,12 @@ export default function RaceArena() {
   const [speed, setSpeed] = useState(1.5);
 
   const [selectedAlgos, setSelectedAlgos] = useState([
-    'bitonic',
-    'oddeven',
-    'quicksort',
     'mergesort',
+    'quicksort',
+    'bucket',
+    'radix',
     'samplesort',
-    'shearsort'
+    'bitonic'
   ]);
 
   const [initialData, setInitialData] = useState([]);
@@ -451,6 +451,8 @@ export default function RaceArena() {
                 {raceRankings.map((algoId, idx) => {
                   const algo = PARALLEL_ALGORITHMS[algoId];
                   const racer = raceStates[algoId];
+                  if (!algo || !racer) return null;
+
                   const lastStep = racer.steps[racer.steps.length - 1];
                   const comps = lastStep?.metrics?.totalComparisons || 0;
                   const swaps = lastStep?.metrics?.totalSwaps || 0;

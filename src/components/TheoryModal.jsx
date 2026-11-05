@@ -44,7 +44,7 @@ export default function TheoryModal() {
             Taxonomía PRAM (Parallel Random Access Machine)
           </h3>
           <ul style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', listStyleType: 'disc', paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            <li><strong>EREW:</strong> Lectura y escritura exclusivas (Batcher, Odd-Even).</li>
+            <li><strong>EREW:</strong> Lectura y escritura exclusivas (Batcher).</li>
             <li><strong>CREW:</strong> Lectura concurrente, escritura exclusiva (QuickSort, MergeSort).</li>
             <li><strong>CRCW:</strong> Lectura y escritura concurrentes (resueltas por Common, Arbitrary o Priority).</li>
           </ul>
@@ -56,7 +56,7 @@ export default function TheoryModal() {
             Principio Cero-Uno (0-1 Sorting Lemma)
           </h3>
           <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-            Demostrado por Knuth: Si una red de comparadores (o un algoritmo insensible a los datos como Shearsort o Bitonic) ordena correctamente todas las <strong>2ⁿ</strong> secuencias posibles compuestas únicamente por ceros y unos, entonces garantiza ordenar cualquier arreglo de números reales arbitrarios.
+            Demostrado por Knuth: Si una red de comparadores (o un algoritmo insensible a los datos como Bitonic Sort) ordena correctamente todas las <strong>2ⁿ</strong> secuencias posibles compuestas únicamente por ceros y unos, entonces garantiza ordenar cualquier arreglo de números reales arbitrarios.
           </p>
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function TheoryModal() {
       <section className="visualizer-panel" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Cpu size={18} color="var(--accent-cyan)" />
-          Matriz Comparativa de Algoritmos Paralelos (8 Implementaciones)
+          Matriz Comparativa de Algoritmos Paralelos (6 Implementaciones)
         </h3>
 
         <div style={{ overflowX: 'auto' }}>
@@ -116,12 +116,10 @@ export default function TheoryModal() {
                   </td>
                   <td style={{ padding: '0.65rem 0.5rem', color: 'var(--text-secondary)', fontSize: '0.74rem' }}>
                     {algo.id === 'bitonic' && 'FPGAs, ASICs y Bitonic Sort en shaders compute HLSL/GLSL'}
-                    {algo.id === 'oddeven' && 'Arreglos sistólicos lineales y computación cuántica/óptica'}
                     {algo.id === 'quicksort' && 'CPUs multinúcleo con memoria compartida y multiprocessing'}
                     {algo.id === 'mergesort' && 'Sistemas de bases de datos externas con streaming en paralelo'}
                     {algo.id === 'samplesort' && 'Clusters de supercómputo y librerías de paso de mensajes MPI'}
                     {algo.id === 'radix' && 'Tarjetas gráficas masivas NVIDIA CUDA (CUB / Thrust)'}
-                    {algo.id === 'shearsort' && 'Procesadores en malla 2D y redes en chip (Network-on-Chip)'}
                     {algo.id === 'bucket' && 'Motores analíticos SQL distribuidos en memoria uniforme'}
                   </td>
                 </tr>
@@ -135,28 +133,28 @@ export default function TheoryModal() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.25rem' }}>
         <div className="visualizer-panel" style={{ padding: '1.25rem' }}>
           <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--accent-cyan)', marginBottom: '0.5rem' }}>
-            1. Redes de Comparadores (Bitonic Sort)
+            1. Blelloch / Prefix Sums (Parallel Radix Sort)
           </h4>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            A diferencia de los algoritmos basados en ramas condicionales en software, una red de ordenamiento está cableada en hardware. No sufre penalizaciones por predicción de saltos errónea (branch misprediction). Esto la hace ideal para GPUs y pipelines de alta frecuencia.
+            Radix Sort paralelo elimina las comparaciones directas. Usa un escaneo de prefijos en 2 pasadas (Up-sweep hacia la raíz y Down-sweep hacia las hojas) para calcular los desplazamientos exactos de memoria en tiempo O(log n), permitiendo dispersiones libres de cerrojos (lock-free).
           </p>
         </div>
 
         <div className="visualizer-panel" style={{ padding: '1.25rem' }}>
           <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--p1-color)', marginBottom: '0.5rem' }}>
-            2. Redes de Interconexión 2D (Shearsort)
+            2. Muestreo Regular MPI (Sample Sort)
           </h4>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            Shearsort es el algoritmo clásico en topologías bidimensionales (mesh). Al ordenar filas adyacentes en sentidos opuestos (serpentina) y columnas hacia abajo, cada fase reduce el número de filas "sucias" (filas con ceros y unos mezclados) a la mitad, convergiendo en O(√n log n).
+            Sample Sort particiona los datos entre p procesos mediante ordenamiento local previo, selección de p − 1 divisores regulares (splitters) sobre muestras representativas e intercambio All-to-All de cubetas, logrando balanceo distribuido en O((n/p) log(n/p) + p log p).
           </p>
         </div>
 
         <div className="visualizer-panel" style={{ padding: '1.25rem' }}>
           <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--accent-warning)', marginBottom: '0.5rem' }}>
-            3. Algoritmo de Blelloch (Parallel Radix Sort)
+            3. Redes de Comparadores (Bitonic Sort)
           </h4>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            Radix Sort paralelo elimina las comparaciones directas. Usa un escaneo de prefijos en 2 pasadas (Up-sweep hacia la raíz y Down-sweep hacia las hojas) para calcular los desplazamientos exactos de memoria en tiempo O(log n), permitiendo dispersiones libres de cerrojos (lock-free).
+            A diferencia de los algoritmos basados en ramas condicionales en software, una red de ordenamiento está cableada en hardware. No sufre penalizaciones por predicción de saltos errónea (branch misprediction). Esto la hace ideal para GPUs y pipelines de alta frecuencia.
           </p>
         </div>
       </div>

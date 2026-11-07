@@ -1,59 +1,9 @@
 import React from 'react';
 import { WORKER_COLORS } from './Controls';
-import { Grid, Network, Layers, GitMerge } from 'lucide-react';
+import { Network, Layers, GitMerge } from 'lucide-react';
 
 export default function StructureVisualizer({ algoId, step, numWorkers }) {
   if (!step) return null;
-
-  // 1. Shearsort 2D Grid Mesh
-  if (algoId === 'shearsort' && step.meshData) {
-    const { rows, cols, grid = [], phaseType, round } = step.meshData;
-
-    return (
-      <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', fontWeight: 600 }}>
-          <Grid size={16} color="var(--accent-cyan)" />
-          <span>Malla 2D de Procesadores ({rows}x{cols}) · Fase: {phaseType.toUpperCase()}</span>
-        </div>
-
-        <div
-          className="mesh-grid"
-          style={{ gridTemplateColumns: `repeat(${cols}, 54px)` }}
-        >
-          {grid.map((cell) => {
-            const isRowPhase = phaseType === 'rows';
-            const isColPhase = phaseType === 'cols';
-            const workerId = (isRowPhase ? cell.row : cell.col) % numWorkers;
-            const workerColor = WORKER_COLORS[workerId % WORKER_COLORS.length];
-
-            return (
-              <div
-                key={cell.index}
-                className="mesh-cell"
-                style={{
-                  borderColor: workerColor,
-                  backgroundColor: `${workerColor}18`,
-                  color: '#ffffff'
-                }}
-              >
-                <span>{cell.val}</span>
-                <span className="mesh-arrow" style={{ color: workerColor }}>
-                  {cell.dir === 'right' && '→ P' + workerId}
-                  {cell.dir === 'left' && '← P' + workerId}
-                  {isColPhase && '↓ P' + workerId}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '480px' }}>
-          En Shearsort, las filas pares se ordenan hacia la derecha y las impares hacia la izquierda.
-          Luego, las columnas se ordenan hacia abajo. Esto crea un efecto de cancelación de inversiones a través de la malla 2D.
-        </p>
-      </div>
-    );
-  }
 
   // 2. Sample Sort Buckets & Splitters
   if (algoId === 'samplesort' && step.sampleData) {

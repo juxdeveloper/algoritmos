@@ -17,7 +17,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('simulator'); // 'simulator' | 'race' | 'amdahl' | 'theory'
 
   // Simulator state
-  const [selectedAlgo, setSelectedAlgo] = useState('bitonic');
+  const [selectedAlgo, setSelectedAlgo] = useState('mergesort');
   const [arraySize, setArraySize] = useState(16);
   const [numWorkers, setNumWorkers] = useState(4);
   const [distribution, setDistribution] = useState('random');
@@ -58,7 +58,7 @@ export default function App() {
 
   // Re-generate steps when algorithm, size, workers, or distribution changes
   const regenerateSteps = useCallback((customData = null) => {
-    const algoDef = PARALLEL_ALGORITHMS[selectedAlgo] || PARALLEL_ALGORITHMS.bitonic;
+    const algoDef = PARALLEL_ALGORITHMS[selectedAlgo] || PARALLEL_ALGORITHMS.mergesort;
 
     // Check size validity for algorithm
     let validSize = arraySize;
@@ -167,7 +167,7 @@ export default function App() {
   }, [steps.length]);
 
   const currentStep = steps[currentStepIndex] || null;
-  const currentAlgoDef = PARALLEL_ALGORITHMS[selectedAlgo] || PARALLEL_ALGORITHMS.bitonic;
+  const currentAlgoDef = PARALLEL_ALGORITHMS[selectedAlgo] || PARALLEL_ALGORITHMS.mergesort;
 
   const hasStructure =
     currentAlgoDef.hasMeshView ||

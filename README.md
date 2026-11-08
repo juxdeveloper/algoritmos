@@ -15,18 +15,16 @@ El proyecto permite no solo ver el movimiento de los datos paso a paso o en tiem
 
 ---
 
-## 🚀 Los 8 Algoritmos Paralelos Implementados
+## 🚀 Los 6 Algoritmos Paralelos Implementados
 
 | Algoritmo | Modelo / Arquitectura | Trabajo $T_1(n)$ | Lapso $T_\infty(n)$ | Aceleración $S_p$ | Eficiencia $E_p$ | Estabilidad | Caso Óptimo |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Bitonic Sort** | Red de Comparadores / PRAM EREW | $O(n \log^2 n)$ | $O(\log^2 n)$ | $O(n)$ | $O(1 / \log n)$ | No | FPGAs, ASICs, GPUs |
-| **Odd-Even Transposition** | Arreglo Sistólico 1D / PRAM EREW | $O(n^2)$ | $O(n)$ | $O(n)$ | $O(1)$ | Sí | Mallas lineales, ópticos |
-| **Parallel QuickSort** | Fork-Join / PRAM CREW / ProcessPool | $O(n \log n)$ | $O(\log^2 n)$ | $O(p / \log p)$ | $O(1 / \log p)$ | No | CPUs multinúcleo compartidas |
 | **Parallel MergeSort** | Reducción Binaria / Memoria Local | $O(n \log n)$ | $O(n/p + \log n)$ | $O(p)$ | $O(1)$ | Sí | Streaming paralelo y bases de datos |
-| **Sample Sort** | Memoria Distribuida / MPI Clusters | $O(n \log n)$ | $O((n/p)\log(n/p) + p\log p)$ | $O(p)$ | $O(1)$ | No | Supercómputo y clusters MPI |
-| **Parallel Radix Sort** | SIMD / GPU / Blelloch Prefix Sum | $O(k \cdot n)$ | $O(k(n/p + \log p))$ | $O(p / \log p)$ | $O(1 / \log p)$ | Sí | NVIDIA CUDA (CUB / Thrust) |
-| **Shearsort** | Malla Bidimensional 2D ($\sqrt{n} \times \sqrt{n}$) | $O(n \log n)$ | $O(\sqrt{n} \log n)$ | $O(\sqrt{n})$ | $O(1 / \sqrt{n})$ | No | Redes en chip (NoC) |
+| **Parallel QuickSort** | Fork-Join / PRAM CREW / ProcessPool | $O(n \log n)$ | $O(\log^2 n)$ | $O(p / \log p)$ | $O(1 / \log p)$ | No | CPUs multinúcleo compartidas |
 | **Parallel Bucket Sort** | Memoria Compartida / PRAM CREW | $O(n + k)$ | $O(n/p + \log p)$ | $O(p)$ | $O(1)$ | Sí (con sub-sort estable) | Motores analíticos SQL |
+| **Parallel Radix Sort** | SIMD / GPU / Blelloch Prefix Sum | $O(k \cdot n)$ | $O(k(n/p + \log p))$ | $O(p / \log p)$ | $O(1 / \log p)$ | Sí | NVIDIA CUDA (CUB / Thrust) |
+| **Sample Sort** | Memoria Distribuida / MPI Clusters | $O(n \log n)$ | $O((n/p)\log(n/p) + p\log p)$ | $O(p)$ | $O(1)$ | No | Supercómputo y clusters MPI |
+| **Bitonic Sort** | Red de Comparadores / PRAM EREW | $O(n \log^2 n)$ | $O(\log^2 n)$ | $O(n)$ | $O(1 / \log n)$ | No | FPGAs, ASICs, GPUs |
 
 ---
 
@@ -35,15 +33,15 @@ El proyecto permite no solo ver el movimiento de los datos paso a paso o en tiem
 ### 1. Simulador Principal Multivista
 - **Visualizador de Barras Concurrente:** Cada barra indica su valor numérico, índice y el núcleo asignado ($P_i$). Identifica operaciones de comparación (amarillo) e intercambio (rojo) simultáneas.
 - **Línea de Tiempo Gantt:** Muestra la utilización y estado exacto de cada hilo en cada instante de tiempo (comparando, particionando, mezclando, barrera de sincronización o inactivo).
-- **Red de Comparadores Alambrada (Sorting Network):** Dibuja los cables de datos horizontales y los comparadores verticales concurrentes para Bitonic Sort y Odd-Even Transposition.
+- **Red de Comparadores Alambrada (Sorting Network):** Dibuja los cables de datos horizontales y los comparadores verticales concurrentes para Bitonic Sort.
 - **Estructura Concurrente:**
-  - *Malla 2D de Shearsort:* visualiza la cuadrícula de procesadores serpenteando filas y ordenando columnas.
+  - *Árbol de Reducción / Fork-Join (MergeSort, QuickSort y Bucket Sort):* visualiza la jerarquía de subproblemas divididos, fusión binaria y distribución en cubetas concurrentes.
   - *Sample Sort:* muestra la fase de muestreo local, cálculo de separadores (splitters) globales e intercambio All-to-All.
   - *Radix Sort:* ilustra el conteo de dígitos y el árbol de sumas de prefijo (Parallel Scan).
 - **Consola de Código Sincronizada:** Muestra la implementación canónica en Python/pseudocódigo resaltando la línea exacta en ejecución en cada paso.
 
 ### 2. Arena de Carreras (Side-by-Side Race Arena)
-- Permite enfrentar hasta 8 algoritmos paralelos en simultáneo sobre el **mismo conjunto de datos idéntico**.
+- Permite enfrentar hasta 6 algoritmos paralelos en simultáneo sobre el **mismo conjunto de datos idéntico**.
 - Selección de distribuciones: Aleatorio Uniforme, Inverso (Peor Caso), Casi Ordenado (90%), Muchos Duplicados, y Picos Alternantes.
 - Podio de ganadores evaluado por lapso paralelo ($T_\infty$) y trabajo total ($T_1$), con animación de confeti para el vencedor.
 

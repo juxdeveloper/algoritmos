@@ -101,7 +101,7 @@
 \end{center}
 
 \begin{abstract}
-El ordenamiento paralelo constituye una de las áreas fundamentales del cómputo de alto rendimiento, donde la concurrencia permite trascender la cota secuencial inferior de comparaciones $\Omega(n \log n)$ en términos de tiempo de ejecución (lapso o \emph{span}). En este trabajo se presenta el diseño, fundamentación matemática e implementación de un laboratorio interactivo desarrollado en React y HTML5 que ilustra, paso a paso y de forma intuitiva, ocho algoritmos de ordenamiento paralelos representativos de diversos paradigmas de hardware (PRAM, redes de comparadores, mallas bidimensionales, arquitecturas de memoria compartida y memoria distribuida con paso de mensajes). Se analizan detalladamente el trabajo $T_1$, la profundidad $T_\infty$, el \emph{speedup} teórico y real, las barreras de sincronización y las restricciones de concurrencia impuestas por el GIL (\emph{Global Interpreter Lock}) en CPython. La plataforma se encuentra desplegada públicamente mediante GitHub Actions en GitHub Pages y versionada en el PR \#27 del repositorio oficial del curso.
+El ordenamiento paralelo constituye una de las áreas fundamentales del cómputo de alto rendimiento, donde la concurrencia permite trascender la cota secuencial inferior de comparaciones $\Omega(n \log n)$ en términos de tiempo de ejecución (lapso o \emph{span}). En este trabajo se presenta el diseño, fundamentación matemática e implementación de un laboratorio interactivo desarrollado en React y HTML5 que ilustra, paso a paso y de forma intuitiva, seis algoritmos de ordenamiento paralelos representativos de diversos paradigmas de hardware (PRAM, redes de comparadores, arquitecturas de memoria compartida, GPU/SIMD y memoria distribuida con paso de mensajes). Se analizan detalladamente el trabajo $T_1$, la profundidad $T_\infty$, el \emph{speedup} teórico y real, las barreras de sincronización y las restricciones de concurrencia impuestas por el GIL (\emph{Global Interpreter Lock}) en CPython. La plataforma se encuentra desplegada públicamente mediante GitHub Actions en GitHub Pages y versionada en el PR \#27 del repositorio oficial del curso.
 \end{abstract}
 
 \tableofcontents
@@ -110,8 +110,8 @@ El ordenamiento paralelo constituye una de las áreas fundamentales del cómputo
 \section{Objetivos del Proyecto}
 \begin{itemize}
   \item Desarrollar una aplicación web interactiva en React que modele fielmente la ejecución paralela síncrona y asíncrona de los principales algoritmos de ordenamiento, facilitando la comprensión intuitiva de la sincronización entre procesadores.
-  \item Implementar generadores deterministas de pasos de ejecución para ocho algoritmos paralelos: \emph{Bitonic Sort}, \emph{Odd-Even Transposition Sort}, \emph{Parallel QuickSort}, \emph{Parallel MergeSort}, \emph{Sample Sort}, \emph{Parallel Radix Sort}, \emph{Shearsort} y \emph{Parallel Bucket Sort}.
-  \item Integrar vistas complementarias en tiempo real: barras con asignación de núcleos, trazado de redes de comparadores de Batcher, diagramas de Gantt con barreras de sincronización y representaciones topológicas (mallas 2D, árboles Fork-Join y cubetas de dispersión).
+  \item Implementar generadores deterministas de pasos de ejecución para seis algoritmos paralelos: \emph{Parallel MergeSort}, \emph{Parallel QuickSort}, \emph{Parallel Bucket Sort}, \emph{Parallel Radix Sort}, \emph{Sample Sort} y \emph{Bitonic Sort}.
+  \item Integrar vistas complementarias en tiempo real: barras con asignación de núcleos, trazado de redes de comparadores de Batcher, diagramas de Gantt con barreras de sincronización y representaciones estructurales (árboles Fork-Join, cubetas de dispersión, histogramas con escaneo de prefijos y muestreo distribuido).
   \item Contrastar empíricamente la aceleración teórica predicha por la Ley de Amdahl y el Teorema de Brent con las restricciones del modelo de procesos de CPython frente al uso de hilos (\emph{threading} vs. \emph{multiprocessing}).
   \item Configurar un flujo de integración continua (CI/CD) con GitHub Actions para compilar y desplegar automáticamente el simulador en GitHub Pages ante cualquier actualización en la rama \archivo{simulacion}.
 \end{itemize}
@@ -164,45 +164,40 @@ El \textbf{Principio Cero-Uno de Knuth} establece que:
 \begin{quote}
 \emph{«Si una red de comparadores ordena correctamente todas las $2^n$ secuencias posibles formadas únicamente por ceros y unos, entonces ordenará correctamente cualquier secuencia de $n$ elementos arbitrarios ordenables.»}
 \end{quote}
-Este teorema simplifica formalmente la verificación de redes como Bitonic Sort y Odd-Even Transposition.
+Este teorema simplifica formalmente la verificación de redes como Bitonic Sort.
 
 \section{Catálogo de Algoritmos Paralelos Implementados}
 
-En la Tabla~\ref{tab:complejidades} se resumen las características de los ocho algoritmos desarrollados en la plataforma.
+En la Tabla~\ref{tab:complejidades} se resumen las características de los seis algoritmos desarrollados en la plataforma.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Complejidad teórica, modelo de hardware y propiedades de los ocho algoritmos implementados en el simulador.}
+\caption{Complejidad teórica, modelo de hardware y propiedades de los seis algoritmos implementados en el simulador.}
 \label{tab:complejidades}
 \begin{tabularx}{\textwidth}{lccccX}
 \toprule
 \textbf{Algoritmo} & \textbf{Trabajo ($T_1$)} & \textbf{Lapso ($T_\infty$)} & \textbf{Speedup ($S_p$)} & \textbf{Estable} & \textbf{Modelo Computacional}\\
 \midrule
-Bitonic Sort & $O(n \log^2 n)$ & $O(\log^2 n)$ & $O(n / \log n)$ & No & Redes de Comparadores / EREW\\
-Odd-Even Transp. & $O(n^2)$ & $O(n)$ & $O(n)$ & Sí & Malla Sistólica 1D / EREW\\
-Parallel QuickSort & $O(n \log n)$ & $O(\log^2 n)$ & $O(p / \log p)$ & No & Fork-Join / Memoria Compartida\\
 Parallel MergeSort & $O(n \log n)$ & $O(n/p + \log n)$ & $O(p)$ & Sí & Árbol de Reducción / CREW\\
-Sample Sort & $O(n \log n)$ & $O(\frac{n}{p} \log \frac{n}{p})$ & $O(p)$ & No & Memoria Distribuida (MPI)\\
-Parallel Radix Sort & $O(k \cdot n)$ & $O(k(\frac{n}{p} + \log p))$ & $O(p / \log p)$ & Sí & SIMD / Prefix Sums / GPU\\
-Shearsort & $O(n \log n)$ & $O(\sqrt{n} \log n)$ & $O(\sqrt{n})$ & No & Malla 2D Toroidal\\
+Parallel QuickSort & $O(n \log n)$ & $O(\log^2 n)$ & $O(p / \log p)$ & No & Fork-Join / Memoria Compartida\\
 Parallel Bucket Sort & $O(n + k)$ & $O(n/p + \log p)$ & $O(p)$ & Sí$^*$ & CREW / Dispersión Concurrente\\
+Parallel Radix Sort & $O(k \cdot n)$ & $O(k(\frac{n}{p} + \log p))$ & $O(p / \log p)$ & Sí & SIMD / Prefix Sums / GPU\\
+Sample Sort & $O(n \log n)$ & $O(\frac{n}{p}\log\frac{n}{p} + p\log p)$ & $O(p)$ & No & Memoria Distribuida (MPI)\\
+Bitonic Sort & $O(n \log^2 n)$ & $O(\log^2 n)$ & $O(n / \log n)^\dagger$ & No & Redes de Comparadores / EREW\\
 \bottomrule
 \end{tabularx}
+\par\smallskip
+\begin{minipage}{\textwidth}
+\footnotesize
+\raggedright
+$^*$ Estable si el sub-algoritmo local utilizado en cada cubeta es estable.\\
+$^\dagger$ Razón de trabajo propio $T_1 / T_\infty = O(n)$; frente al óptimo secuencial por comparaciones $\Theta(n \log n)$, el \emph{speedup} efectivo es $O(n / \log n)$.
+\end{minipage}
 \end{table}
 
-\subsection{Bitonic Sort (Red de Batcher)}
-Propuesto por Ken Batcher en 1968~\cite{batcher}, construye progresivamente subsecuencias bitónicas (secuencias que primero crecen monótonamente y luego decrecen) y las transforma en secuencias monótonas mediante el operador \emph{Bitonic Merge}. Para un arreglo de tamaño $n = 2^k$, el algoritmo se organiza en $\log_2 n$ fases principales. Cada fase $k$ se subdivide en pasos con salto $j = k/2, k/4, \dots, 1$, comparando e intercambiando en paralelo los pares $(i, i \oplus j)$.
-
-La profundidad paralela total es exactamente:
-\begin{equation}
-  D(n) = \sum_{k=1}^{\log_2 n} k = \frac{\log_2 n (\log_2 n + 1)}{2} = O(\log^2 n).
-  \label{eq:prof_bitonic}
-\end{equation}
-Para $n = 16$, Bitonic Sort concluye en exactamente 10 etapas paralelas de comparación, asignando las $n/2 = 8$ compuertas por etapa entre los núcleos disponibles.
-
-\subsection{Odd-Even Transposition Sort}
-Es la paralelización del ordenamiento burbuja sobre una cadena lineal de procesadores (malla 1D sistólica). En cada etapa par, los comparadores operan sobre índices $(2i, 2i+1)$; en cada etapa impar, operan sobre $(2i+1, 2i+2)$. Como ningún índice se repite dentro de la misma fase, todas las comparaciones de una fase se ejecutan en tiempo $O(1)$ sin riesgo de colisión. El arreglo converge en a lo sumo $n$ fases paralelas.
+\subsection{Parallel MergeSort con Árbol de Reducción}
+Se divide el arreglo de $n$ elementos en $p$ bloques contiguos de tamaño $\lceil n/p \rceil$. En la \textbf{Fase 1}, los $p$ núcleos ordenan sus bloques locales en paralelo dentro de sus propias cachés L1/L2, sin requerir sincronización ni transferencias de bus. En la \textbf{Fase 2}, un árbol de fusión binaria sincronizado mediante barreras combina los bloques por parejas hasta obtener el resultado unificado.
 
 \subsection{Parallel QuickSort con Umbral Secuencial}
 En QuickSort paralelo, tras elegir el pivote y particionar el arreglo, se lanzan dos sub-tareas recursivas independientes mediante un \emph{ProcessPool} o despachador \emph{Fork-Join}. Para evitar la sobrecarga de creación de procesos y paso de mensajes en arreglos pequeños, se incorpora un umbral secuencial (\emph{threshold}):
@@ -215,8 +210,16 @@ En QuickSort paralelo, tras elegir el pivote y particionar el arreglo, se lanzan
 \end{equation}
 Esta técnica es idéntica a la implementada en la Tarea 6 de la asignatura, permitiendo que los subproblemas alcancen velocidad máxima de compilación nativa en sus hojas.
 
-\subsection{Parallel MergeSort con Árbol de Reducción}
-Se divide el arreglo de $n$ elementos en $p$ bloques contiguos de tamaño $\lceil n/p \rceil$. En la \textbf{Fase 1}, los $p$ núcleos ordenan sus bloques locales en paralelo dentro de sus propias cachés L1/L2, sin requerir sincronización ni transferencias de bus. En la \textbf{Fase 2}, un árbol de fusión binaria sincronizado mediante barreras combina los bloques por parejas hasta obtener el resultado unificado.
+\subsection{Parallel Bucket Sort}
+Determina concurrentemente el rango numérico $[\min, \max]$, divide el intervalo en $B = p$ cubetas uniformes y dispersa los elementos en paralelo. Posteriormente, cada procesador ordena su cubeta asignada de manera independiente, ensamblando la secuencia final sin colisiones.
+
+\subsection{Parallel Radix Sort (Conteo y Escaneo de Prefijos)}
+A diferencia de los ordenamientos por comparación, Radix Sort procesa las representaciones en base $b$ dígito por dígito. Para paralelizarlo sin bloqueos atómicos, se aplica el algoritmo de \textbf{Prefix Sums / Blelloch Scan}~\cite{blelloch}:
+\begin{enumerate}
+  \item Cada núcleo genera un histograma de frecuencias local para el dígito actual.
+  \item Se realiza un escaneo de prefijos paralelo sobre la matriz de histogramas para deducir el índice global exacto de destino de cada elemento.
+  \item Cada núcleo escribe sus elementos concurrentemente en el arreglo auxiliar en sus posiciones precalculadas (\emph{Parallel Scatter}), garantizando estabilidad sin contención.
+\end{enumerate}
 
 \subsection{Sample Sort (Ordenamiento por Muestreo MPI)}
 Diseñado para arquitecturas de memoria distribuida sin bus compartido~\cite{samplesort}, resuelve el problema del desbalance de carga que sufre QuickSort paralelo. El proceso se articula en cinco fases deterministas:
@@ -228,24 +231,15 @@ Diseñado para arquitecturas de memoria distribuida sin bus compartido~\cite{sam
   \item \textbf{Ordenamiento final}: Cada procesador ordena localmente la cubeta consolidada recibida. La concatenación de los bloques de los $p$ procesadores produce el arreglo global ordenado.
 \end{enumerate}
 
-\subsection{Parallel Radix Sort (Conteo y Escaneo de Prefijos)}
-A diferencia de los ordenamientos por comparación, Radix Sort procesa las representaciones en base $b$ dígito por dígito. Para paralelizarlo sin bloqueos atómicos, se aplica el algoritmo de \textbf{Prefix Sums / Blelloch Scan}~\cite{blelloch}:
-\begin{enumerate}
-  \item Cada núcleo genera un histograma de frecuencias local para el dígito actual.
-  \item Se realiza un escaneo de prefijos paralelo sobre la matriz de histogramas para deducir el índice global exacto de destino de cada elemento.
-  \item Cada núcleo escribe sus elementos concurrentemente en el arreglo auxiliar en sus posiciones precalculadas (\emph{Parallel Scatter}), garantizando estabilidad sin contención.
-\end{enumerate}
+\subsection{Bitonic Sort (Red de Batcher)}
+Propuesto por Ken Batcher en 1968~\cite{batcher}, construye progresivamente subsecuencias bitónicas (secuencias que primero crecen monótonamente y luego decrecen) y las transforma en secuencias monótonas mediante el operador \emph{Bitonic Merge}. Para un arreglo de tamaño $n = 2^m$, el algoritmo se organiza en $\log_2 n$ fases principales $k \in \{1, \dots, \log_2 n\}$. Cada fase $k$ se subdivide en pasos con salto $j = 2^{k-1}, 2^{k-2}, \dots, 1$, comparando e intercambiando en paralelo los pares $(i, i \oplus j)$.
 
-\subsection{Shearsort (Malla Bidimensional 2D)}
-Shearsort organiza $n$ datos en una matriz de $r \times c$ procesadores conectados como una malla toroidal 2D~\cite{shearsort}. Ejecuta $\lceil \log_2 r \rceil + 1$ rondas compuestas por:
-\begin{enumerate}
-  \item \textbf{Fase de Filas}: Se ordenan todas las filas simultáneamente en orden serpenteante (filas pares hacia la derecha $\rightarrow$, filas impares hacia la izquierda $\leftarrow$).
-  \item \textbf{Fase de Columnas}: Se ordenan todas las columnas simultáneamente de arriba hacia abajo ($\downarrow$).
-\end{enumerate}
-La inversión deliberada de sentido en filas adyacentes cancela pares fuera de orden en columnas continuas, conduciendo a convergencia en $O(\sqrt{n} \log n)$ pasos paralelos.
-
-\subsection{Parallel Bucket Sort}
-Determina concurrentemente el rango numérico $[\min, \max]$, divide el intervalo en $B = p$ cubetas uniformes y dispersa los elementos en paralelo. Posteriormente, cada procesador ordena su cubeta asignada de manera independiente, ensamblando la secuencia final sin colisiones.
+La profundidad paralela total es exactamente:
+\begin{equation}
+  D(n) = \sum_{k=1}^{\log_2 n} k = \frac{\log_2 n (\log_2 n + 1)}{2} = O(\log^2 n).
+  \label{eq:prof_bitonic}
+\end{equation}
+Para $n = 16$, Bitonic Sort concluye en exactamente 10 etapas paralelas de comparación, asignando las $n/2 = 8$ compuertas por etapa entre los núcleos disponibles. Con trabajo propio $T_1 = O(n \log^2 n)$, el cociente $T_1/T_\infty$ es $O(n)$, mientras que respecto al óptimo secuencial $\Theta(n \log n)$ su \emph{speedup} efectivo es $O(n / \log n)$.
 
 \section{Arquitectura del Laboratorio Web Interactivo}
 
@@ -271,7 +265,7 @@ A continuación se documentan las distintas vistas del sistema desplegado, captu
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.95\linewidth]{simulador_principal.png}
-  \caption{Simulador principal: Bitonic Sort en ejecución con 4 procesadores y $N=16$. Se observan las barras con sus etiquetas de núcleo asignado (P0..P3), el resaltado de comparaciones concurrentes en dorado, el contador de pasos paralelos y el panel de telemetría en tiempo real.}
+  \caption{Simulador principal: Parallel MergeSort en ejecución con 4 procesadores y $N=16$. Se observan las barras con sus etiquetas de núcleo asignado (P0..P3), el resaltado de operaciones concurrentes, el contador de pasos paralelos y el panel de telemetría en tiempo real.}
   \label{fig:simulador}
 \end{figure}
 
@@ -291,15 +285,15 @@ A continuación se documentan las distintas vistas del sistema desplegado, captu
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.95\linewidth]{estructura_malla_shearsort.png}
-  \caption{Malla bidimensional 2D para Shearsort: Cuadrícula $4\times 4$ de procesadores con flechas vectoriales indicando la dirección serpenteante en filas (pares derecha, impares izquierda) y la posterior ordenación descendente en columnas.}
-  \label{fig:malla}
+  \includegraphics[width=0.95\linewidth]{estructura_concurrente.png}
+  \caption{Vista de estructura concurrente: Representación especializada para algoritmos paralelos sin red fija, mostrando la matriz de histogramas locales por núcleo y los desplazamientos calculados mediante escaneo de prefijos (Blelloch Scan) en Parallel Radix Sort, así como los separadores globales y la redistribución \emph{All-to-All} en Sample Sort.}
+  \label{fig:estructura}
 \end{figure}
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.95\linewidth]{arena_carreras.png}
-  \caption{Arena de Carreras (Race Mode): Ejecución comparativa simultánea de cuatro algoritmos paralelos sobre la misma secuencia de entrada aleatoria, contrastando en vivo pasos paralelos, número total de comparaciones e intercambios.}
+  \caption{Arena de Carreras (Race Mode): Ejecución comparativa simultánea de los seis algoritmos paralelos sobre la misma secuencia de entrada aleatoria, contrastando en vivo pasos paralelos, número total de comparaciones e intercambios.}
   \label{fig:carreras}
 \end{figure}
 
@@ -358,7 +352,7 @@ Si dos núcleos leen el mismo valor de $c$ antes de que el otro escriba, se pier
 \section{Verificación y Uso Declarado de Inteligencia Artificial}
 
 \subsection{Metodología de verificación cruzada}
-Para garantizar que las ocho simulaciones convergen a estados válidos, se implementó un conjunto de pruebas unitarias automatizadas:
+Para garantizar que las seis simulaciones convergen a estados válidos, se implementó un conjunto de pruebas unitarias automatizadas:
 \begin{itemize}
   \item \textbf{Preservación de elementos (Multiconjunto)}: Se comprobó que el arreglo de salida en el último paso es una permutación exacta del arreglo de entrada, sin duplicación ni pérdida de elementos ($\text{sort}(A) = \text{sort}(B)$).
   \item \textbf{Monotonía estricta}: Se verificó que $\forall i \in [0, n-2], \; A[i] \le A[i+1]$ al finalizar el algoritmo en cualquier tamaño ($n \in \{8, 16, 32, 64\}$) y bajo cualquier distribución (aleatoria, inversa, casi ordenada, duplicados y alternada).
@@ -377,7 +371,7 @@ Todas las rutinas de ordenamiento, asertos matemáticos y flujos de despliegue e
 \section{Conclusiones}
 En este trabajo se consolidó un entorno interactivo completo para el estudio pedagógico y técnico de los algoritmos de ordenamiento paralelos. Se cumplieron todos los objetivos planteados:
 \begin{enumerate}
-  \item Se modelaron e implementaron con éxito ocho algoritmos de ordenamiento paralelos cubriendo las principales arquitecturas computacionales contemporáneas.
+  \item Se modelaron e implementaron con éxito seis algoritmos de ordenamiento paralelos cubriendo las principales arquitecturas computacionales contemporáneas.
   \item La interfaz web desarrollada ofrece múltiples perspectivas sincronizadas (diagrama de barras con asignación de núcleos, red de Batcher, Gantt concurrente y arena de carreras), permitiendo visualizar en cámara lenta la sincronización y el flujo de datos.
   \item Se comprobó de manera rigurosa la validez de la Ley de Amdahl y el Teorema de Brent, explicando por qué CPython requiere procesos independientes (\archivo{multiprocessing}) para eludir el GIL en cargas CPU-bound.
   \item Todo el código fuente del proyecto se encuentra estructurado en la carpeta \archivo{Proyecto/}, vinculado al PR \#27 hacia la rama \archivo{simulacion}, y desplegado automáticamente en GitHub Pages mediante GitHub Actions.
@@ -421,11 +415,6 @@ Addison-Wesley Professional, Reading, MA, 1992.
 G.~E. Blelloch,
 «Prefix sums and their applications»,
 en \emph{Synthesis of Parallel Algorithms}, Morgan Kaufmann, pp.~35--60, 1993.
-
-\bibitem{shearsort}
-I.~D. Scherson, S.~Sen, y A.~Shamir,
-«Shearsort: A versatile sorting algorithm for two-dimensional computing arrays»,
-\emph{IEEE Transactions on Computers}, vol.~C-35, no.~6, pp.~567--572, 1986.
 
 \bibitem{samplesort}
 H.~Shi y J.~Schaeffer,

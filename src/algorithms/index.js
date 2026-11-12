@@ -191,9 +191,10 @@ export const PARALLEL_ALGORITHMS = {
     efficiency: 'O(1 / log n)',
     stability: 'No estable',
     suitableSizes: [8, 16, 32, 64],
-    defaultSize: 16,
+    defaultSize: 8,
     generate: generateBitonicSortSteps,
     hasNetworkView: true,
+    hasBitonicView: true,
     description:
       'Diseñado por Ken Batcher en 1968. Transforma recursivamente secuencias arbitrarias en secuencias bitónicas (primero crecen, luego decrecen) y las fusiona en paralelo con comparadores alambrados en etapas logarítmicas.',
     keyInsights: [

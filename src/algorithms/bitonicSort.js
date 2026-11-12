@@ -5,10 +5,31 @@
  * Profundidad T_inf: O(log^2 n)
  * Con N=16: 10 etapas paralelas
  */
+function buildStageExplanation(k, d, n, swapCount) {
+  if (k === 2 && d === 1) {
+    return 'Parejas de 2: alternamos subida (↑) y bajada (↓) para armar las primeras mini-montañas bitónicas.';
+  }
+  if (k === n && d === Math.floor(n / 2)) {
+    return `Bloque completo de ${n} (↑): salto mitad d = ${d}, comparamos la mitad izquierda contra la mitad derecha.`;
+  }
+  if (k === n && d === 1) {
+    return `Bloque completo de ${n} (↑): salto final d = 1, último ajuste de vecinos para dejar todo ordenado.`;
+  }
+  if (d === Math.floor(k / 2)) {
+    return `Bloques de ${k} (salto mitad d = ${d}): cruzamos mitades para formar bloques que suben (↑) y bajan (↓).`;
+  }
+  if (d === 1) {
+    return `Mismos bloques de ${k} (salto vecinos d = 1): ajustamos parejas adyacentes para consolidar bloques más grandes.`;
+  }
+  return `Bloques de ${k} (salto d = ${d}): acercamos cada valor a su mitad correspondiente (${swapCount} intercambios).`;
+}
+
 export function generateBitonicSortSteps(initialArray, numWorkers = 4) {
   const steps = [];
+  const original = [...initialArray];
   const arr = [...initialArray];
   const n = arr.length;
+  const totalStages = Math.round((Math.log2(n) * (Math.log2(n) + 1)) / 2);
   let totalComps = 0;
   let totalSwaps = 0;
   let stageCounter = 0;
@@ -34,7 +55,20 @@ export function generateBitonicSortSteps(initialArray, numWorkers = 4) {
       parallelDepth: 0,
       activeCores: 0,
     },
-    networkStage: { stageIndex: 0, totalStages: Math.round((Math.log2(n) * (Math.log2(n) + 1)) / 2) }
+    networkStage: { stageIndex: 0, totalStages },
+    bitonicData: {
+      phase: 'initial',
+      k: 2,
+      d: 1,
+      stageIndex: 0,
+      totalStages,
+      original,
+      before: [...arr],
+      after: [...arr],
+      explanation: `Arreglo original de ${n} elementos listo. Avanza al Paso 1 para empezar con bloques de tamaño k = 2 y salto d = 1.`,
+      comparisons: [],
+      isFinalStage: false
+    }
   });
 
   // Stages k = 2, 4, 8, ... n
@@ -43,12 +77,14 @@ export function generateBitonicSortSteps(initialArray, numWorkers = 4) {
       stageCounter++;
       const compsThisStep = [];
       const swapsThisStep = [];
+      const detailedComparisons = [];
       const workerAssignments = Array.from({ length: numWorkers }, (_, id) => ({
         workerId: id,
         state: 'comparing',
         indices: [],
       }));
 
+      const beforeArr = [...arr];
       let compIdx = 0;
       for (let i = 0; i < n; i++) {
         const l = i ^ j;
@@ -57,7 +93,8 @@ export function generateBitonicSortSteps(initialArray, numWorkers = 4) {
           compsThisStep.push([i, l]);
           totalComps++;
 
-          const assignedWorker = compIdx % numWorkers;
+          const pairIdx = compIdx;
+          const assignedWorker = pairIdx % numWorkers;
           workerAssignments[assignedWorker].indices.push(i, l);
           compIdx++;
 
@@ -69,6 +106,19 @@ export function generateBitonicSortSteps(initialArray, numWorkers = 4) {
             arr[l] = temp;
             totalSwaps++;
           }
+
+          detailedComparisons.push({
+            pairIdx,
+            workerId: assignedWorker,
+            i,
+            j: l,
+            dir: ascending ? 'asc' : 'desc',
+            valI: beforeArr[i],
+            valJ: beforeArr[l],
+            newI: arr[i],
+            newJ: arr[l],
+            swapped: shouldSwap
+          });
         }
       }
 
@@ -102,7 +152,20 @@ export function generateBitonicSortSteps(initialArray, numWorkers = 4) {
           k,
           j,
           stageIndex: stageCounter,
-          totalStages: Math.round((Math.log2(n) * (Math.log2(n) + 1)) / 2)
+          totalStages
+        },
+        bitonicData: {
+          phase: 'stage',
+          k,
+          d: j,
+          stageIndex: stageCounter,
+          totalStages,
+          original,
+          before: beforeArr,
+          after: [...arr],
+          explanation: buildStageExplanation(k, j, n, swapsThisStep.length),
+          comparisons: detailedComparisons,
+          isFinalStage: k === n
         }
       });
     }
@@ -129,7 +192,20 @@ export function generateBitonicSortSteps(initialArray, numWorkers = 4) {
       parallelDepth: stageCounter,
       activeCores: 0,
     },
-    networkStage: { stageIndex: stageCounter, totalStages: stageCounter }
+    networkStage: { stageIndex: stageCounter, totalStages: stageCounter },
+    bitonicData: {
+      phase: 'completed',
+      k: n,
+      d: 1,
+      stageIndex: stageCounter,
+      totalStages: stageCounter,
+      original,
+      before: [...arr],
+      after: [...arr],
+      explanation: `¡Ordenamiento completo! En ${stageCounter} etapas paralelas la red de Batcher dejó los ${n} elementos ordenados ascendentemente (↑).`,
+      comparisons: [],
+      isFinalStage: true
+    }
   });
 
   return steps;

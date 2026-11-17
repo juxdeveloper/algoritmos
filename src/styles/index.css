@@ -1378,3 +1378,395 @@ body {
   gap: 0.65rem;
 }
 
+/* Rule Help Modal */
+.bitonic-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 17, 0.78);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 60;
+}
+
+.bitonic-modal-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55);
+}
+
+.bitonic-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.bitonic-modal-header h3 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.bitonic-modal-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface-elevated);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.bitonic-modal-close:hover {
+  color: var(--text-primary);
+  border-color: #38bdf8;
+}
+
+.bitonic-modal-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.bitonic-modal-desc .mono,
+.bitonic-modal-desc .mono-cyan,
+.bitonic-modal-desc .mono-purple {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.bitonic-modal-desc .mono-cyan {
+  color: #38bdf8;
+}
+
+.bitonic-modal-desc .mono-purple {
+  color: #c084fc;
+}
+
+.bitonic-schedule-list {
+  background: #090d16;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
+.bitonic-schedule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 6px;
+}
+
+.bitonic-schedule-row + .bitonic-schedule-row {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.bitonic-schedule-row.active {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.bitonic-schedule-k {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.bitonic-schedule-d {
+  font-weight: 700;
+  color: #38bdf8;
+  text-align: right;
+}
+
+.bitonic-modal-confirm {
+  width: 100%;
+  padding: 0.6rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.16);
+  color: #38bdf8;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.bitonic-modal-confirm:hover {
+  background: #38bdf8;
+  color: #090d16;
+}
+
+/* Mobile & Narrow Viewports (<= 640px) */
+@media (max-width: 640px) {
+  .app-container {
+    padding: 0.75rem;
+    gap: 0.9rem;
+  }
+
+  .nav-bar {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .brand-icon {
+    flex-shrink: 0;
+  }
+
+  .brand-titles {
+    min-width: 0;
+  }
+
+  .brand-titles h1 {
+    font-size: 1.05rem;
+  }
+
+  .nav-tabs {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .nav-tab-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .control-deck {
+    padding: 0.85rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .controls-row-top,
+  .controls-row-bottom {
+    width: 100%;
+    min-width: 0;
+    gap: 0.75rem;
+  }
+
+  .algo-select-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    gap: 0.65rem;
+  }
+
+  .algo-select-group > div {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .custom-select {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    font-size: 0.84rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .playback-controls {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 0.4rem;
+  }
+
+  .btn-ctrl {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.8rem;
+  }
+
+  .slider-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .visualizer-main-grid > *,
+  .visualizer-panel,
+  .side-column,
+  .code-viewer-container {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .code-lines {
+    overflow-x: auto;
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .view-subtabs {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .race-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .amdahl-container {
+    padding: 0.85rem;
+  }
+
+  /* Bitonic Visualizer mobile containment */
+  .bitonic-visualizer {
+    padding: 0.5rem;
+    gap: 0.65rem;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .bitonic-header-card,
+  .bitonic-stage-card,
+  .bitonic-cores-card {
+    padding: 0.5rem;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .bitonic-explanation-text {
+    min-width: 0;
+  }
+
+  .bitonic-array-meta {
+    flex-wrap: wrap;
+  }
+
+  .bitonic-fit-wrapper {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .bitonic-scroll-wrapper {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .bitonic-fit-wrapper .bitonic-aligned-track,
+  .bitonic-svg-wrap {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .bitonic-grid {
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .bitonic-bracket {
+    padding: 0.12rem 0.15rem;
+    font-size: 0.6rem;
+    gap: 0.15rem;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+  }
+
+  .bitonic-cell {
+    min-width: 0;
+    padding: 0.32rem 0.1rem;
+    border-radius: 7px;
+    border-width: 1.5px;
+  }
+
+  .bitonic-orig-cell {
+    min-width: 0;
+    padding: 0.24rem 0.1rem;
+    border-radius: 6px;
+  }
+
+  .bitonic-cores-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bitonic-core-card {
+    padding: 0.45rem 0.55rem;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.5rem;
+    min-width: 0;
+  }
+
+  .bitonic-core-left {
+    gap: 0.32rem;
+    font-size: 0.7rem;
+  }
+
+  .bitonic-status-pill {
+    font-size: 0.64rem;
+    padding: 0.15rem 0.42rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .bitonic-grid {
+    gap: 2px;
+  }
+
+  .bitonic-cell {
+    padding: 0.26rem 1px;
+    border-radius: 6px;
+  }
+
+  .bitonic-cell-worker {
+    font-size: 0.52rem;
+    padding: 0.04rem 0.22rem;
+    margin-bottom: 0.14rem;
+  }
+
+  .bitonic-cell-val {
+    font-size: 0.76rem;
+  }
+
+  .bitonic-cell-idx {
+    font-size: 0.52rem;
+    margin-top: 0.12rem;
+  }
+
+  .bitonic-orig-val {
+    font-size: 0.68rem;
+  }
+
+  .bitonic-orig-idx {
+    font-size: 0.52rem;
+  }
+
+  .bitonic-bracket {
+    font-size: 0.55rem;
+    padding: 0.1rem 0.1rem;
+  }
+}

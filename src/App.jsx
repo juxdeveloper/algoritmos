@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from './components/Header';
 import Controls from './components/Controls';
 import BarVisualizer from './components/BarVisualizer';
+import BitonicVisualizer from './components/BitonicVisualizer';
 import NetworkVisualizer from './components/NetworkVisualizer';
 import GanttVisualizer from './components/GanttVisualizer';
 import StructureVisualizer from './components/StructureVisualizer';
@@ -11,7 +12,9 @@ import RaceArena from './components/RaceArena';
 import AmdahlLab from './components/AmdahlLab';
 import TheoryModal from './components/TheoryModal';
 import { PARALLEL_ALGORITHMS } from './algorithms';
-import { BarChart3, Clock, Share2, Network, Grid, Terminal } from 'lucide-react';
+import { BarChart3, Clock, Share2, Network, Grid, Terminal, ArrowUpDown } from 'lucide-react';
+
+const CLASSIC_BITONIC_8 = [27, 32, 18, 24, 22, 4, 43, 30];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('simulator'); // 'simulator' | 'race' | 'amdahl' | 'theory'
@@ -25,7 +28,7 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Subtab inside simulator visualizer panel
-  const [visualizerSubtab, setVisualizerSubtab] = useState('bars'); // 'bars' | 'gantt' | 'network' | 'structure'
+  const [visualizerSubtab, setVisualizerSubtab] = useState('bars'); // 'bitonic' | 'bars' | 'gantt' | 'network' | 'structure'
 
   // Generated animation steps
   const [steps, setSteps] = useState([]);
@@ -33,6 +36,7 @@ export default function App() {
 
   // Timer ref for playback
   const playbackTimerRef = useRef(null);
+  const pendingCustomDataRef = useRef(null);
 
   // Helper to generate initial data
   const generateInitialData = useCallback((size, dist) => {
@@ -67,7 +71,9 @@ export default function App() {
       setArraySize(validSize);
     }
 
-    const data = customData || generateInitialData(validSize, distribution);
+    const pendingData = pendingCustomDataRef.current;
+    pendingCustomDataRef.current = null;
+    const data = customData || pendingData || generateInitialData(validSize, distribution);
     try {
       const generated = algoDef.generate(data, numWorkers);
       setSteps(generated);
@@ -82,11 +88,20 @@ export default function App() {
   const handleSelectAlgo = (newAlgoId) => {
     setSelectedAlgo(newAlgoId);
     const newAlgoDef = PARALLEL_ALGORITHMS[newAlgoId];
+    if (newAlgoDef?.hasBitonicView) {
+      setArraySize(newAlgoDef.defaultSize || 8);
+      setVisualizerSubtab('bitonic');
+      return;
+    }
+
     if (newAlgoDef && !newAlgoDef.suitableSizes.includes(arraySize)) {
       setArraySize(newAlgoDef.defaultSize);
     }
-    // If current subtab was network or structure and new algo doesn't have it, fallback to bars
-    if (visualizerSubtab === 'network' && !newAlgoDef?.hasNetworkView) {
+    // If current subtab was bitonic or network and new algo doesn't have it, fallback to bars
+    if (
+      visualizerSubtab === 'bitonic' ||
+      (visualizerSubtab === 'network' && !newAlgoDef?.hasNetworkView)
+    ) {
       setVisualizerSubtab('bars');
     }
   };
@@ -140,6 +155,16 @@ export default function App() {
     setIsPlaying(false);
     const newData = generateInitialData(arraySize, distribution);
     regenerateSteps(newData);
+  };
+
+  const handleLoadClassicBitonic = () => {
+    setIsPlaying(false);
+    if (arraySize !== 8) {
+      pendingCustomDataRef.current = CLASSIC_BITONIC_8;
+      setArraySize(8);
+    } else {
+      regenerateSteps(CLASSIC_BITONIC_8);
+    }
   };
 
   // Keyboard navigation shortcuts
@@ -219,6 +244,16 @@ export default function App() {
                   </h2>
 
                   <div className="view-subtabs">
+                    {currentAlgoDef.hasBitonicView && (
+                      <button
+                        className={`subtab-btn ${visualizerSubtab === 'bitonic' ? 'active' : ''}`}
+                        onClick={() => setVisualizerSubtab('bitonic')}
+                      >
+                        <ArrowUpDown size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                        Mapa Bitónico
+                      </button>
+                    )}
+
                     <button
                       className={`subtab-btn ${visualizerSubtab === 'bars' ? 'active' : ''}`}
                       onClick={() => setVisualizerSubtab('bars')}
@@ -258,6 +293,18 @@ export default function App() {
                 </div>
 
                 {/* Subtab View Content */}
+                {visualizerSubtab === 'bitonic' && currentAlgoDef.hasBitonicView && (
+                  <BitonicVisualizer
+                    step={currentStep}
+                    numWorkers={numWorkers}
+                    arraySize={arraySize}
+                    currentStepIndex={currentStepIndex}
+                    totalSteps={steps.length}
+                    onStepForward={handleStepForward}
+                    onLoadClassicExample={handleLoadClassicBitonic}
+                  />
+                )}
+
                 {visualizerSubtab === 'bars' && (
                   <BarVisualizer step={currentStep} numWorkers={numWorkers} />
                 )}

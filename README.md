@@ -34,6 +34,10 @@ El proyecto permite no solo ver el movimiento de los datos paso a paso o en tiem
 - **Visualizador de Barras Concurrente:** Cada barra indica su valor numérico, índice y el núcleo asignado ($P_i$). Identifica operaciones de comparación (amarillo) e intercambio (rojo) simultáneas.
 - **Línea de Tiempo Gantt:** Muestra la utilización y estado exacto de cada hilo en cada instante de tiempo (comparando, particionando, mezclando, barrera de sincronización o inactivo).
 - **Red de Comparadores Alambrada (Sorting Network):** Dibuja los cables de datos horizontales y los comparadores verticales concurrentes para Bitonic Sort.
+- **Mapa Bitónico Guiado (para Bitonic Sort):** Vista didáctica paso a paso que inicia con el ejemplo clásico de 8 elementos ($N = 8$) y organiza cada etapa según el tamaño de bloque $k$ (`↑ Asc` / `↓ Desc`) y el salto de comparación $d$:
+  - *Fila original de referencia y selector `Antes` / `Después`:* conserva el arreglo original como referencia fija y permite alternar entre el estado previo y posterior al paso actual.
+  - *Arcos mariposa (SVG):* traza arcos SVG entre cada pareja comparada a distancia $d$ dentro de cada bloque, destacando intercambios efectivos y comparaciones sin cambio.
+  - *Tarjetas por núcleo ($P_i$):* muestra las parejas asignadas a cada procesador, su dirección (`↑ Asc` o `↓ Desc`) y el resultado de cada comparación concurrente.
 - **Estructura Concurrente:**
   - *Árbol de Reducción / Fork-Join (MergeSort, QuickSort y Bucket Sort):* visualiza la jerarquía de subproblemas divididos, fusión binaria y distribución en cubetas concurrentes.
   - *Sample Sort:* muestra la fase de muestreo local, cálculo de separadores (splitters) globales e intercambio All-to-All.

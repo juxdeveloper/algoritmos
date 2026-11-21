@@ -52,9 +52,10 @@ export const PARALLEL_ALGORITHMS = {
     efficiency: 'O(1 / log p)',
     stability: 'No estable',
     suitableSizes: [8, 16, 32, 64],
-    defaultSize: 16,
+    defaultSize: 8,
     generate: generateParallelQuickSortSteps,
     hasTreeView: true,
+    hasGuidedView: true,
     description:
       'Particiona el arreglo y lanza sub-tareas en paralelo en un ProcessPool. Cuando el tamaño del sub-arreglo cae por debajo de un umbral, cambia a quicksort serial para amortizar el costo de creación de procesos (Tarea 6 EDA II).',
     keyInsights: [
@@ -67,13 +68,13 @@ export const PARALLEL_ALGORITHMS = {
       'def quicksort_paralelo(arr, umbral=10_000):',
       '    if len(arr) <= umbral:',
       '        return quicksort_serial(arr)',
-      '    pivote = arr[-1]',
-      '    menores = [x for x in arr[:-1] if x <= pivote]',
-      '    mayores = [x for x in arr[:-1] if x > pivote]',
+      '    pivote = elegir_pivote(arr)',
+      '    menores = [x for x in arr if x < pivote]',
+      '    iguales = [x for x in arr if x == pivote]; mayores = [x for x in arr if x > pivote]',
       '    with ProcessPoolExecutor(max_workers=2) as executor:',
       '        fut_izq = executor.submit(quicksort_paralelo, menores, umbral)',
       '        fut_der = executor.submit(quicksort_paralelo, mayores, umbral)',
-      '        return fut_izq.result() + [pivote] + fut_der.result()'
+      '        return fut_izq.result() + iguales + fut_der.result()'
     ]
   },
   bucket: {
@@ -123,9 +124,10 @@ export const PARALLEL_ALGORITHMS = {
     efficiency: 'O(1 / log p)',
     stability: 'Estable',
     suitableSizes: [8, 16, 32, 64],
-    defaultSize: 16,
+    defaultSize: 8,
     generate: generateParallelRadixSortSteps,
     hasRadixView: true,
+    hasGuidedView: true,
     description:
       'La base de las librerías de aceleración en GPU (como CUB / Thrust de CUDA). Descompone los números en dígitos y calcula las posiciones exactas de escritura sin bloqueos mediante un escaneo de prefijos paralelo (Prefix Sum).',
     keyInsights: [
@@ -157,9 +159,10 @@ export const PARALLEL_ALGORITHMS = {
     efficiency: 'O(1)',
     stability: 'No estable',
     suitableSizes: [8, 16, 32, 64],
-    defaultSize: 16,
+    defaultSize: 8,
     generate: generateSampleSortSteps,
     hasSampleView: true,
+    hasGuidedView: true,
     description:
       'El algoritmo estándar en supercómputo y librerías MPI. Cada proceso extrae muestras locales; un coordinador determina p-1 separadores globales para balancear la carga perfectamente y evitar el cuello de botella del pivote único.',
     keyInsights: [

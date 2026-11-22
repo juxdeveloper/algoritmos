@@ -726,7 +726,306 @@ export default function QuickSortVisualizer({
           </div>
         )}
 
+        {/* PHASE: RECURSE */}
+        {data.phase === 'recurse' && (
+          <div className="qs-recurse-stage">
+            <div className="guided-lanes qs-recurse-lanes">
+              {data.recurseTasks.map((task, idx) => {
+                const workerColor = WORKER_COLORS[task.workerId % WORKER_COLORS.length];
+                const hasSplitGroups = Array.isArray(task.left) || Array.isArray(task.right);
+
+                return (
+                  <article
+                    key={task.id ?? idx}
+                    className="guided-lane qs-recurse-lane"
+                    style={{
+                      borderColor: hexToRgba(workerColor, 0.45),
+                      backgroundColor: hexToRgba(workerColor, 0.05)
+                    }}
+                  >
+                    <header className="guided-lane-header">
+                      <span
+                        className="qs-worker-badge"
+                        style={{
+                          backgroundColor: hexToRgba(workerColor, 0.18),
+                          color: workerColor,
+                          borderColor: hexToRgba(workerColor, 0.45)
+                        }}
+                      >
+                        <Cpu size={12} />
+                        <span>
+                          {task.label} · P{task.workerId}
+                        </span>
+                      </span>
+
+                      {task.pivotVal !== undefined && !task.isSorted && (
+                        <span className="qs-pivot-note" style={{ color: '#fbbf24' }}>
+                          pivote = {task.pivotVal}
+                        </span>
+                      )}
+
+                      {task.isSorted && (
+                        <span
+                          className="qs-sorted-tag"
+                          style={{
+                            color: '#34d399',
+                            backgroundColor: 'rgba(52, 211, 153, 0.14)',
+                            borderColor: 'rgba(52, 211, 153, 0.4)'
+                          }}
+                        >
+                          ordenado
+                        </span>
+                      )}
+                    </header>
+
+                    {/* Before subarray with local pivot highlighted */}
+                    <div className="qs-sub-block">
+                      {renderCells(
+                        task.beforeSub,
+                        (_, cellIdx) => {
+                          if (cellIdx === task.pivotIndex) {
+                            return {
+                              role: 'pivot',
+                              style: {
+                                borderColor: '#fbbf24',
+                                backgroundColor: 'rgba(251, 191, 36, 0.2)',
+                                color: '#fde68a'
+                              }
+                            };
+                          }
+                          return {
+                            role: 'neutral',
+                            style: {
+                              borderColor: hexToRgba(workerColor, 0.35)
+                            }
+                          };
+                        },
+                        false
+                      )}
+                    </div>
+
+                    {/* Arrow Down */}
+                    <div className="qs-arrow-down" aria-hidden="true">
+                      ↓
+                    </div>
+
+                    {/* After subarray: sorted or partitioned (menores | pivote | mayores) */}
+                    <div className="qs-sub-block qs-sub-after">
+                      {task.isSorted ? (
+                        <div className="qs-after-sorted-wrap">
+                          {renderCells(
+                            task.afterSub,
+                            () => ({
+                              role: 'sorted',
+                              style: {
+                                borderColor: 'rgba(52, 211, 153, 0.55)',
+                                backgroundColor: 'rgba(52, 211, 153, 0.14)',
+                                color: '#a7f3d0'
+                              }
+                            }),
+                            false
+                          )}
+                          <span className="qs-sub-caption qs-caption-sorted">ordenado ✓</span>
+                        </div>
+                      ) : hasSplitGroups ? (
+                        <div className="qs-after-groups">
+                          <div className="qs-mini-group qs-mini-left">
+                            {renderCells(
+                              task.left || [],
+                              () => ({
+                                role: 'left',
+                                style: {
+                                  borderColor: 'rgba(56, 189, 248, 0.45)',
+                                  backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                                  color: '#bae6fd'
+                                }
+                              }),
+                              false
+                            )}
+                          </div>
+                          <span className="qs-group-sep" aria-hidden="true">
+                            |
+                          </span>
+                          <div className="qs-mini-group qs-mini-pivot">
+                            {renderCells(
+                              task.pivotVal !== undefined ? [task.pivotVal] : [],
+                              () => ({
+                                role: 'pivot',
+                                style: {
+                                  borderColor: '#fbbf24',
+                                  backgroundColor: 'rgba(251, 191, 36, 0.2)',
+                                  color: '#fde68a'
+                                }
+                              }),
+                              false
+                            )}
+                          </div>
+                          <span className="qs-group-sep" aria-hidden="true">
+                            |
+                          </span>
+                          <div className="qs-mini-group qs-mini-right">
+                            {renderCells(
+                              task.right || [],
+                              () => ({
+                                role: 'right',
+                                style: {
+                                  borderColor: 'rgba(168, 85, 247, 0.45)',
+                                  backgroundColor: 'rgba(168, 85, 247, 0.12)',
+                                  color: '#e9d5ff'
+                                }
+                              }),
+                              false
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        renderCells(
+                          task.afterSub,
+                          (val) => {
+                            if (task.pivotVal !== undefined && val === task.pivotVal) {
+                              return {
+                                role: 'pivot',
+                                style: {
+                                  borderColor: '#fbbf24',
+                                  backgroundColor: 'rgba(251, 191, 36, 0.2)',
+                                  color: '#fde68a'
+                                }
+                              };
+                            }
+                            if (task.pivotVal !== undefined && val < task.pivotVal) {
+                              return {
+                                role: 'left',
+                                style: {
+                                  borderColor: 'rgba(56, 189, 248, 0.45)',
+                                  backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                                  color: '#bae6fd'
+                                }
+                              };
+                            }
+                            if (task.pivotVal !== undefined && val > task.pivotVal) {
+                              return {
+                                role: 'right',
+                                style: {
+                                  borderColor: 'rgba(168, 85, 247, 0.45)',
+                                  backgroundColor: 'rgba(168, 85, 247, 0.12)',
+                                  color: '#e9d5ff'
+                                }
+                              };
+                            }
+                            return {
+                              role: 'sorted',
+                              style: {
+                                borderColor: hexToRgba(workerColor, 0.5),
+                                backgroundColor: hexToRgba(workerColor, 0.12)
+                              }
+                            };
+                          },
+                          false
+                        )
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* PHASE: DONE */}
+        {data.phase === 'done' && (
+          <div className="qs-done-stage">
+            <div className="qs-caption-row">
+              <span
+                className="qs-status-pill qs-pill-done"
+                style={{
+                  borderColor: 'rgba(52, 211, 153, 0.45)',
+                  backgroundColor: 'rgba(52, 211, 153, 0.14)',
+                  color: '#34d399'
+                }}
+              >
+                <CheckCircle2 size={14} />
+                <span>✓ Todos los hilos terminaron</span>
+              </span>
+            </div>
+
+            {renderCells(data.array, (_, idx) => {
+              if (
+                typeof data.donePivotIndex === 'number' &&
+                data.donePivotIndex >= 0 &&
+                data.donePivotIndex < data.array.length
+              ) {
+                if (idx < data.donePivotIndex) {
+                  return {
+                    role: 'left',
+                    style: {
+                      borderColor: 'rgba(56, 189, 248, 0.55)',
+                      backgroundColor: 'rgba(56, 189, 248, 0.14)',
+                      color: '#bae6fd'
+                    }
+                  };
+                }
+                if (idx === data.donePivotIndex) {
+                  return {
+                    role: 'pivot',
+                    style: {
+                      borderColor: '#fbbf24',
+                      backgroundColor: 'rgba(251, 191, 36, 0.22)',
+                      color: '#fde68a',
+                      boxShadow: '0 0 14px rgba(251, 191, 36, 0.26)'
+                    }
+                  };
+                }
+                return {
+                  role: 'right',
+                  style: {
+                    borderColor: 'rgba(168, 85, 247, 0.55)',
+                    backgroundColor: 'rgba(168, 85, 247, 0.14)',
+                    color: '#e9d5ff'
+                  }
+                };
+              }
+
+              return {
+                role: 'sorted',
+                style: {
+                  borderColor: 'rgba(52, 211, 153, 0.55)',
+                  backgroundColor: 'rgba(52, 211, 153, 0.14)',
+                  color: '#a7f3d0'
+                }
+              };
+            })}
+
+            <p className="qs-done-note">
+              Cada lado quedó ordenado en su posición original sin necesidad de fusionar.
+            </p>
+          </div>
+        )}
       </section>
+
+      {/* 4. Bottom Summary Cards */}
+      <footer className="guided-summary-grid">
+        <div className="guided-summary-card">
+          <div className="guided-summary-title">
+            <Info size={14} color="#38bdf8" />
+            <span>Idea clave</span>
+          </div>
+          <p className="guided-summary-text">
+            Primero se particiona respecto al pivote; después, ambos lados independientes se ordenan en paralelo.
+          </p>
+        </div>
+
+        <div className="guided-summary-card">
+          <div className="guided-summary-title">
+            <Gauge size={14} color="#c084fc" />
+            <span>Complejidad</span>
+          </div>
+          <p className="guided-summary-text">
+            Trabajo medio <strong className="qs-mono">O(n log n)</strong> · Span ideal{' '}
+            <strong className="qs-mono">O(log² n)</strong> (O(n) con partición secuencial) · Peor caso{' '}
+            <strong className="qs-mono">O(n²)</strong>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

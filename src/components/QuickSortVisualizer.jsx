@@ -343,6 +343,390 @@ function PhaseBadgeLabel(phase, level) {
   }
 }
 
-export default function QuickSortVisualizer() {
-  return null;
+export default function QuickSortVisualizer({
+  step,
+  numWorkers = 4,
+  arraySize = 8,
+  currentStepIndex = 0,
+  totalSteps = 5,
+  steps = [],
+  onSelectStep,
+  onLoadClassicExample
+}) {
+  const [focusMode, setFocusMode] = useState(false);
+
+  const data = useMemo(
+    () => normalizeQuickSortStep(step, steps, numWorkers, arraySize, currentStepIndex),
+    [step, steps, numWorkers, arraySize, currentStepIndex]
+  );
+
+  const effectiveTotalSteps = Math.max(totalSteps || 0, steps.length || 0, 1);
+  const densityClass = getDensityClass(data.n);
+  const phaseLabel = PhaseBadgeLabel(data.phase, data.level);
+
+  const renderCells = (values, getVariant, showIndex = true) => {
+    if (!Array.isArray(values) || values.length === 0) {
+      return <span className="qs-empty-sub">∅ (vacío)</span>;
+    }
+
+    return (
+      <div className={`qs-array-row ${densityClass}`}>
+        {values.map((val, idx) => {
+          const variant = getVariant ? getVariant(val, idx) : {};
+          const roleClass = variant.role ? `qs-cell-${variant.role}` : '';
+          const inlineStyle = variant.style || undefined;
+          return (
+            <div
+              key={`${idx}-${val}`}
+              className={`qs-cell ${roleClass}`}
+              style={inlineStyle}
+              title={`[${idx}] = ${val}`}
+            >
+              <span className="qs-cell-val">{val}</span>
+              {showIndex && values.length <= 32 && (
+                <span className="qs-cell-idx">[{idx}]</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <div className={`guided-visualizer qs-visualizer ${focusMode ? 'guided-focus-mode' : ''}`}>
+      {/* 1. Top Header & Quick Actions */}
+      <header className="guided-header">
+        <nav className="guided-step-tabs" aria-label="Pasos de QuickSort Paralelo">
+          {steps.length > 0 ? (
+            steps.map((s, idx) => {
+              const shortLabel =
+                s?.quicksortData?.shortLabel ||
+                (s?.quicksortData?.phase
+                  ? PhaseBadgeLabel(s.quicksortData.phase, s.quicksortData.level ?? 1)
+                  : s?.stageName || `Paso ${idx + 1}`);
+              const isActive = idx === currentStepIndex;
+              const isCompleted = idx < currentStepIndex;
+
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`guided-step-tab ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                  onClick={() => onSelectStep && onSelectStep(idx)}
+                  aria-current={isActive ? 'step' : undefined}
+                  title={`Paso ${idx + 1}: ${shortLabel}`}
+                >
+                  <span className="guided-step-num">{idx + 1}</span>
+                  <span className="guided-step-label">{shortLabel}</span>
+                </button>
+              );
+            })
+          ) : (
+            <span className="guided-step-tab active">
+              <span className="guided-step-num">{currentStepIndex + 1}</span>
+              <span className="guided-step-label">{phaseLabel}</span>
+            </span>
+          )}
+        </nav>
+
+        <div className="guided-quick-actions">
+          {onLoadClassicExample && (
+            <button
+              type="button"
+              className="guided-action-btn guided-classic-btn"
+              onClick={onLoadClassicExample}
+              title="Cargar ejemplo clásico [8, 3, 1, 7, 5, 2, 9] con 2 hilos"
+            >
+              <Sparkles size={13} />
+              <span>Clásico [8,3,1,7,5,2,9] (2 Hilos)</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            className={`guided-action-btn guided-focus-btn ${focusMode ? 'active' : ''}`}
+            onClick={() => setFocusMode((v) => !v)}
+            aria-pressed={focusMode}
+            title="Activar o desactivar modo exposición"
+          >
+            {focusMode ? <EyeOff size={13} /> : <Eye size={13} />}
+            <span>Exposición</span>
+          </button>
+        </div>
+      </header>
+
+      {/* 2. Stage Banner */}
+      <section className="guided-stage-banner">
+        <div className="guided-stage-meta">
+          <span className="guided-step-counter">
+            Paso {currentStepIndex + 1} de {effectiveTotalSteps}
+          </span>
+          <span className={`guided-phase-badge qs-phase-${data.phase}`}>
+            {phaseLabel}
+          </span>
+        </div>
+        <h3 className="guided-stage-title">{data.title}</h3>
+        <p className="guided-stage-desc">{data.description}</p>
+      </section>
+
+      {/* 3. Interactive Scene per phase */}
+      <section className={`guided-scene qs-scene qs-scene-${data.phase}`}>
+        {/* PHASE: PIVOT */}
+        {data.phase === 'pivot' && (
+          <div className="qs-pivot-stage">
+            <div className="qs-section-head">
+              <span className="qs-section-label">Arreglo original</span>
+              <span className="qs-size-chip">N = {data.array.length}</span>
+            </div>
+
+            {renderCells(data.array, (_, idx) => {
+              if (idx === data.pivotIndex) {
+                return {
+                  role: 'pivot',
+                  style: {
+                    borderColor: '#fbbf24',
+                    backgroundColor: 'rgba(251, 191, 36, 0.16)',
+                    color: '#fde68a',
+                    boxShadow: '0 0 14px rgba(251, 191, 36, 0.28)'
+                  }
+                };
+              }
+              return { role: 'neutral' };
+            })}
+
+            <div className="qs-caption-row">
+              <span
+                className="qs-status-pill qs-pill-amber"
+                style={{
+                  borderColor: 'rgba(251, 191, 36, 0.45)',
+                  backgroundColor: 'rgba(251, 191, 36, 0.14)',
+                  color: '#fbbf24'
+                }}
+              >
+                Pivote = {data.pivotVal ?? '—'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* PHASE: PARTITION */}
+        {data.phase === 'partition' && (
+          <div className="qs-partition-stage">
+            <div className="qs-split">
+              <div
+                className="qs-split-group qs-split-left"
+                style={{
+                  borderColor: 'rgba(56, 189, 248, 0.4)',
+                  backgroundColor: 'rgba(56, 189, 248, 0.06)'
+                }}
+              >
+                <span className="qs-split-title" style={{ color: '#38bdf8' }}>
+                  Menores que {data.pivotVal}
+                </span>
+                {renderCells(
+                  data.left,
+                  () => ({
+                    role: 'left',
+                    style: {
+                      borderColor: 'rgba(56, 189, 248, 0.5)',
+                      backgroundColor: 'rgba(56, 189, 248, 0.14)',
+                      color: '#bae6fd'
+                    }
+                  }),
+                  false
+                )}
+              </div>
+
+              <div
+                className="qs-split-group qs-split-pivot"
+                style={{
+                  borderColor: 'rgba(251, 191, 36, 0.55)',
+                  backgroundColor: 'rgba(251, 191, 36, 0.1)'
+                }}
+              >
+                <span className="qs-split-title" style={{ color: '#fbbf24' }}>
+                  Pivote
+                </span>
+                {renderCells(
+                  data.pivotVal !== undefined ? [data.pivotVal] : [],
+                  () => ({
+                    role: 'pivot',
+                    style: {
+                      borderColor: '#fbbf24',
+                      backgroundColor: 'rgba(251, 191, 36, 0.2)',
+                      color: '#fde68a',
+                      boxShadow: '0 0 14px rgba(251, 191, 36, 0.28)'
+                    }
+                  }),
+                  false
+                )}
+              </div>
+
+              <div
+                className="qs-split-group qs-split-right"
+                style={{
+                  borderColor: 'rgba(168, 85, 247, 0.4)',
+                  backgroundColor: 'rgba(168, 85, 247, 0.06)'
+                }}
+              >
+                <span className="qs-split-title" style={{ color: '#c084fc' }}>
+                  Mayores que {data.pivotVal}
+                </span>
+                {renderCells(
+                  data.right,
+                  () => ({
+                    role: 'right',
+                    style: {
+                      borderColor: 'rgba(168, 85, 247, 0.5)',
+                      backgroundColor: 'rgba(168, 85, 247, 0.14)',
+                      color: '#e9d5ff'
+                    }
+                  }),
+                  false
+                )}
+              </div>
+            </div>
+
+            <div className="qs-caption-row">
+              <span
+                className="qs-status-pill qs-pill-amber"
+                style={{
+                  borderColor: 'rgba(251, 191, 36, 0.45)',
+                  backgroundColor: 'rgba(251, 191, 36, 0.14)',
+                  color: '#fbbf24'
+                }}
+              >
+                Partición completa · {data.pivotVal} en su posición definitiva
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* PHASE: SPAWN */}
+        {data.phase === 'spawn' && (
+          <div className="qs-spawn-stage">
+            <div className="qs-spawn-top">
+              <div
+                className="qs-spawn-pivot-box"
+                style={{
+                  borderColor: 'rgba(251, 191, 36, 0.55)',
+                  backgroundColor: 'rgba(251, 191, 36, 0.1)'
+                }}
+              >
+                <span className="qs-spawn-pivot-label" style={{ color: '#fbbf24' }}>
+                  Pivote fijo
+                </span>
+                <div
+                  className="qs-cell qs-cell-pivot"
+                  style={{
+                    borderColor: '#fbbf24',
+                    backgroundColor: 'rgba(251, 191, 36, 0.2)',
+                    color: '#fde68a'
+                  }}
+                >
+                  <span className="qs-cell-val">{data.pivotVal}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* SVG Fork Connector */}
+            {data.spawnLanes.length > 0 && (
+              <div className="qs-fork-wrap" aria-hidden="true">
+                <svg
+                  className="qs-fork-svg"
+                  viewBox="0 0 400 56"
+                  preserveAspectRatio="none"
+                >
+                  <circle cx="200" cy="6" r="4" fill="#fbbf24" />
+                  {data.spawnLanes.map((lane, idx) => {
+                    const count = data.spawnLanes.length;
+                    const targetX = count === 1 ? 200 : ((idx + 0.5) / count) * 400;
+                    const workerColor = WORKER_COLORS[lane.workerId % WORKER_COLORS.length];
+                    const pathD = `M 200 6 C 200 30, ${targetX} 26, ${targetX} 50`;
+                    return (
+                      <g key={lane.id}>
+                        <path
+                          d={pathD}
+                          fill="none"
+                          stroke={workerColor}
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        />
+                        <circle cx={targetX} cy="50" r="4" fill={workerColor} />
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+            )}
+
+            <div
+              className="qs-spawn-lanes"
+              style={{
+                gridTemplateColumns:
+                  data.spawnLanes.length > 2
+                    ? 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))'
+                    : undefined
+              }}
+            >
+              {data.spawnLanes.map((lane, idx) => {
+                const workerColor = WORKER_COLORS[lane.workerId % WORKER_COLORS.length];
+                return (
+                  <div
+                    key={lane.id}
+                    className="qs-spawn-lane"
+                    style={{
+                      borderColor: hexToRgba(workerColor, 0.45),
+                      backgroundColor: hexToRgba(workerColor, 0.06)
+                    }}
+                  >
+                    <div className="qs-lane-header">
+                      <span
+                        className="qs-worker-badge"
+                        style={{
+                          backgroundColor: hexToRgba(workerColor, 0.18),
+                          color: workerColor,
+                          borderColor: hexToRgba(workerColor, 0.45)
+                        }}
+                      >
+                        <Cpu size={12} />
+                        <span>
+                          HILO {idx + 1} · {lane.label}
+                        </span>
+                      </span>
+                      <span className="qs-worker-core" style={{ color: workerColor }}>
+                        P{lane.workerId}
+                      </span>
+                    </div>
+
+                    {renderCells(
+                      lane.values,
+                      () => ({
+                        role: lane.side === 'right' ? 'right' : 'left',
+                        style: {
+                          borderColor: hexToRgba(workerColor, 0.55),
+                          backgroundColor: hexToRgba(workerColor, 0.14),
+                          color: '#f8fafc'
+                        }
+                      }),
+                      false
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="qs-caption-row">
+              <span className="qs-status-pill qs-pill-parallel">
+                <Share2 size={13} />
+                <span>Los subarreglos ocupan posiciones distintas: se ejecutan al mismo tiempo</span>
+              </span>
+            </div>
+          </div>
+        )}
+
+      </section>
+    </div>
+  );
 }

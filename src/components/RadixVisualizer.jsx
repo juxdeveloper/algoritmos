@@ -754,6 +754,436 @@ const FALLBACK_CSS = `
 }
 `;
 
-export default function RadixVisualizer() {
-  return null;
+export default function RadixVisualizer({
+  step,
+  numWorkers = 4,
+  arraySize = 8,
+  currentStepIndex = 0,
+  totalSteps = 8,
+  steps = [],
+  onSelectStep,
+  onLoadClassicExample,
+}) {
+  const [focusMode, setFocusMode] = useState(false);
+
+  const data = useMemo(
+    () => normalizeRadixStep(step, steps, currentStepIndex, numWorkers, arraySize),
+    [step, steps, currentStepIndex, numWorkers, arraySize]
+  );
+
+  const stepPills = useMemo(() => {
+    const list = data.effectiveSteps;
+    return list.map((s, idx) => {
+      const sPhase = inferStepPhase(s, idx, list.length);
+      const sDigitPos =
+        s?.radixData?.digitPos ??
+        (sPhase === 'init' ? 0 : Math.max(0, Math.floor(Math.max(0, idx - 1) / 3)));
+      const meta = getDigitMeta(sDigitPos, data.maxDigits);
+
+      let label = s?.radixData?.pillLabel;
+      if (!label) {
+        if (sPhase === 'init') label = 'Inicio';
+        else if (sPhase === 'done') label = 'Finalizado';
+        else if (sPhase === 'hist') label = `${idx}. Conteo ${meta.short}`;
+        else if (sPhase === 'scan') label = `${idx}. Prefijos ${meta.short}`;
+        else label = `${idx}. Mover ${meta.short}`;
+      }
+
+      return { idx, label, sPhase };
+    });
+  }, [data.effectiveSteps, data.maxDigits]);
+
+  if (!step) return null;
+
+  const {
+    phase,
+    digitPos,
+    maxDigits,
+    padWidth,
+    n,
+    p,
+    chunkSize,
+    inputArray,
+    workerRanges,
+    histograms,
+    globalCount,
+    workerOffsets,
+    destItems,
+    effectiveSteps,
+    safeIdx,
+  } = data;
+
+  const digitMeta = getDigitMeta(digitPos, maxDigits);
+  const highlightActiveDigit = phase !== 'init' && phase !== 'done';
+  const safeTotalSteps = Math.max(totalSteps || 0, effectiveSteps.length, 1);
+
+  const gridClass = [
+    'radix-array-grid',
+    n <= 8 ? 'cols-8' : '',
+    n > 32 ? 'scrollable' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const phaseBadgeText =
+    phase === 'init'
+      ? 'En espera'
+      : phase === 'hist'
+        ? 'Fase 1: Histogramas Locales'
+        : phase === 'scan'
+          ? 'Fase 2: Escaneo de Prefijos (Scan)'
+          : phase === 'scatter'
+            ? 'Fase 3: Dispersión Concurrente'
+            : 'Resumen Final';
+
+  const fallbackTitles = {
+    init: `Estado Inicial (${n} elementos, ${p} núcleos)`,
+    hist: `Vuelta ${digitPos + 1} (${digitMeta.label}) — 1. Conteo Local Concurrente`,
+    scan: `Vuelta ${digitPos + 1} (${digitMeta.label}) — 2. Suma Prefija Paralela`,
+    scatter: `Vuelta ${digitPos + 1} (${digitMeta.label}) — 3. Dispersión a Búfer Auxiliar`,
+    done: 'Ordenamiento Completado — Arreglo 100% Ordenado',
+  };
+
+  const fallbackDescs = {
+    init: `Arreglo de ${n} elementos cargado con ${p} núcleos. Avanza al Paso 1 para contar en paralelo la frecuencia del dígito menos significativo.`,
+    hist: `Cada núcleo P0..P${p - 1} recorre su bloque contiguo en paralelo y cuenta cuántas veces aparece cada dígito 0..9 en la posición 10^${digitPos}.`,
+    scan: `El escaneo paralelo de prefijos calcula los índices exactos de escritura por núcleo y dígito, eliminando colisiones de memoria.`,
+    scatter: `Cada núcleo escribe sus elementos directamente en su offset global asignado dentro del búfer auxiliar y sincroniza con barrier().`,
+    done: `Todas las ${maxDigits} vueltas terminaron sin realizar comparaciones entre claves. Complejidad paralela O(d·(n/p + log p)).`,
+  };
+
+  return (
+    <div className={`guided-visualizer radix-visualizer ${focusMode ? 'guided-focus-mode radix-focus-mode' : ''}`}>
+      <style>{FALLBACK_CSS}</style>
+
+      {/* 1. Top Clickable Step Bar & Actions */}
+      <section className="guided-stepbar-card radix-stepbar" aria-label="Pasos de Radix Sort Paralelo">
+        <div className="guided-step-pills">
+          {stepPills.map((pill) => {
+            const stateClass =
+              pill.idx === safeIdx ? 'active' : pill.idx < safeIdx ? 'done' : '';
+            return (
+              <button
+                key={pill.idx}
+                type="button"
+                className={`guided-step-pill ${stateClass}`}
+                onClick={() => onSelectStep?.(pill.idx)}
+                aria-current={pill.idx === safeIdx ? 'step' : undefined}
+              >
+                {pill.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="guided-step-actions">
+          <button
+            type="button"
+            className="guided-classic-btn"
+            onClick={() => onLoadClassicExample?.()}
+            disabled={!onLoadClassicExample}
+            title="Cargar ejemplo clásico [42, 15, 82, 34, 12, 95, 25, 52] con 2 núcleos"
+          >
+            <Sparkles size={13} />
+            <span>Clásico [42,15,82...] (2 Núcleos)</span>
+          </button>
+
+          <button
+            type="button"
+            className={`guided-focus-btn ${focusMode ? 'active' : ''}`}
+            onClick={() => setFocusMode((v) => !v)}
+            aria-pressed={focusMode}
+            title="Alternar modo exposición para presentación"
+          >
+            {focusMode ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+            <span>Exposición</span>
+          </button>
+        </div>
+      </section>
+
+      {/* 2. Card 1: Arreglo de Entrada (de la vuelta actual) */}
+      <section className="guided-card radix-input-card">
+        <div className="guided-card-header">
+          <div className="guided-card-title">
+            <Cpu size={15} color="var(--accent-cyan)" />
+            <span>Arreglo de Entrada (de la vuelta actual)</span>
+          </div>
+
+          <span className={`radix-pass-badge ${phase === 'done' ? 'done' : ''}`}>
+            {phase === 'done'
+              ? 'PROCESO TERMINADO'
+              : `VUELTA ${digitPos + 1}: ${digitMeta.label} ${digitMeta.dir}`.trim()}
+          </span>
+        </div>
+
+        <div className="radix-worker-legend">
+          {workerRanges.map((wr) => {
+            const color = WORKER_COLORS[wr.workerId % WORKER_COLORS.length];
+            return (
+              <span
+                key={wr.workerId}
+                className="radix-worker-chip"
+                style={{
+                  color,
+                  backgroundColor: hexToRgba(color, 0.12),
+                  borderColor: hexToRgba(color, 0.35),
+                }}
+              >
+                <span className="radix-worker-dot" style={{ backgroundColor: color }} />
+                {wr.label}
+              </span>
+            );
+          })}
+        </div>
+
+        <div className={gridClass}>
+          {inputArray.map((val, idx) => {
+            const workerId = Math.min(p - 1, Math.floor(idx / chunkSize));
+            const workerColor = WORKER_COLORS[workerId % WORKER_COLORS.length];
+            return (
+              <div
+                key={idx}
+                className="radix-el-card"
+                style={{ borderColor: hexToRgba(workerColor, 0.42) }}
+              >
+                <span
+                  className="radix-worker-pill"
+                  style={{
+                    backgroundColor: hexToRgba(workerColor, 0.18),
+                    color: workerColor,
+                  }}
+                >
+                  P{workerId}
+                </span>
+                <span className="radix-el-val">
+                  {renderDigitValue(val, padWidth, digitPos, highlightActiveDigit)}
+                </span>
+                <span className="radix-el-idx">[{idx}]</span>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 3. Card 2: Panel Intermedio (Conteo Local + Suma Prefija) */}
+      <section className="guided-card radix-mid-card">
+        <div className="guided-card-header">
+          <div className="guided-card-title">
+            <Layers size={15} color="var(--accent-cyan)" />
+            <span>Panel Intermedio (Conteo Local + Suma Prefija)</span>
+          </div>
+          <span className="radix-waiting-pill">{phaseBadgeText}</span>
+        </div>
+
+        {phase === 'init' && (
+          <div className="radix-init-prompt">
+            <p className="radix-init-prompt-text">
+              El arreglo inicial está particionado entre <strong>P0..P{p - 1}</strong>. Avanza al{' '}
+              <strong>Paso 1</strong> para que cada núcleo cuente en paralelo las frecuencias de sus
+              dígitos sin comparaciones ni bloqueos.
+            </p>
+            {onSelectStep && effectiveSteps.length > 1 && (
+              <button
+                type="button"
+                className="radix-next-cta"
+                onClick={() => onSelectStep(1)}
+              >
+                <span>Ir al Paso 1</span>
+                <ArrowRight size={14} />
+              </button>
+            )}
+          </div>
+        )}
+
+        {phase === 'done' && (
+          <div className="radix-done-metrics">
+            <div className="radix-metric-box">
+              <span className="radix-metric-label">Vueltas Totales</span>
+              <span className="radix-metric-value">
+                {maxDigits} {maxDigits === 1 ? 'dígito' : 'dígitos'}
+              </span>
+            </div>
+            <div className="radix-metric-box">
+              <span className="radix-metric-label">Comparaciones</span>
+              <span className="radix-metric-value">0 (Solo conteo)</span>
+            </div>
+            <div className="radix-metric-box">
+              <span className="radix-metric-label">Estado Final</span>
+              <span className="radix-metric-value">100% Ordenado</span>
+            </div>
+          </div>
+        )}
+
+        {(phase === 'hist' || phase === 'scan' || phase === 'scatter') && (
+          <div className="radix-table-scroll">
+            <table className="radix-matrix-table">
+              <thead>
+                <tr>
+                  <th className="radix-row-label">Dígito (10^{digitPos})</th>
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => {
+                    const isActive = (globalCount[d] || 0) > 0;
+                    return (
+                      <th key={d} className={isActive ? 'active-digit' : undefined}>
+                        {d}
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: p }, (_, w) => {
+                  const color = WORKER_COLORS[w % WORKER_COLORS.length];
+                  return (
+                    <tr key={`count-${w}`}>
+                      <td className="radix-row-label" style={{ color }}>
+                        Conteo P{w}
+                      </td>
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => {
+                        const count = histograms[w]?.[d] || 0;
+                        const isColActive = (globalCount[d] || 0) > 0;
+                        return (
+                          <td
+                            key={d}
+                            className={`radix-count-cell ${count > 0 ? 'has-count' : ''} ${
+                              isColActive ? 'active-col' : ''
+                            }`}
+                            style={count > 0 ? { color } : undefined}
+                          >
+                            {count}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+
+                {(phase === 'scan' || phase === 'scatter') &&
+                  Array.from({ length: p }, (_, w) => (
+                    <tr key={`offset-${w}`} className="radix-offset-row">
+                      <td className="radix-row-label radix-offset-label">Índice P{w}</td>
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => {
+                        const count = histograms[w]?.[d] || 0;
+                        const offsetVal = workerOffsets[w]?.[d] ?? 0;
+                        return (
+                          <td key={d}>
+                            {count > 0 ? (
+                              <span className="radix-offset-pill">[{offsetVal}]</span>
+                            ) : (
+                              <span className="radix-offset-empty">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* 4. Card 3: Arreglo Destino (Búfer Auxiliar) */}
+      <section className="guided-card radix-dest-card">
+        <div className="guided-card-header">
+          <div className="guided-card-title">
+            {phase === 'done' ? (
+              <CheckCircle2 size={15} color="#34d399" />
+            ) : (
+              <Zap size={15} color={phase === 'scatter' ? '#34d399' : 'var(--text-muted)'} />
+            )}
+            <span>Arreglo Destino (Búfer Auxiliar)</span>
+          </div>
+
+          {phase === 'scatter' || phase === 'done' ? (
+            <span className="radix-barrier-pill">⚡ barrier() completado</span>
+          ) : (
+            <span className="radix-waiting-pill">Esperando fase de dispersión</span>
+          )}
+        </div>
+
+        <div className={gridClass}>
+          {destItems
+            ? destItems.map((item, idx) => {
+                const hasCore = item.fromCore !== null && item.fromCore !== undefined;
+                const workerColor = hasCore
+                  ? WORKER_COLORS[item.fromCore % WORKER_COLORS.length]
+                  : '#34d399';
+                return (
+                  <div
+                    key={idx}
+                    className={`radix-dest-card-item ${phase === 'done' ? 'done' : ''}`}
+                    style={
+                      phase === 'scatter'
+                        ? { borderColor: hexToRgba(workerColor, 0.45) }
+                        : undefined
+                    }
+                  >
+                    <span
+                      className="radix-worker-pill"
+                      style={
+                        phase === 'done'
+                          ? { backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }
+                          : {
+                              backgroundColor: hexToRgba(workerColor, 0.18),
+                              color: workerColor,
+                            }
+                      }
+                    >
+                      {phase === 'done' ? 'OK' : `de P${item.fromCore}`}
+                    </span>
+                    <span className="radix-el-val">
+                      {renderDigitValue(item.value, padWidth, digitPos, phase === 'scatter')}
+                    </span>
+                    <span className="radix-el-idx">[{idx}]</span>
+                  </div>
+                );
+              })
+            : Array.from({ length: n }, (_, idx) => (
+                <div key={idx} className="radix-dest-empty">
+                  <span className="radix-dest-empty-word">vacío</span>
+                  <span className="radix-el-idx">[{idx}]</span>
+                </div>
+              ))}
+        </div>
+      </section>
+
+      {/* 5. Bottom Banner + Puntos Clave */}
+      <section className="guided-narrative-card radix-bottom-banner">
+        <div className="guided-narrative-top">
+          <div style={{ minWidth: 0, flex: '1 1 260px' }}>
+            <h3 className="guided-narrative-title">
+              {step.stageName || fallbackTitles[phase]}
+            </h3>
+            <p className="guided-narrative-desc">
+              {step.description || fallbackDescs[phase]}
+            </p>
+          </div>
+          <span className="guided-step-counter">
+            Paso {safeIdx + 1} / {safeTotalSteps}
+          </span>
+        </div>
+
+        <div className="guided-keypoints-grid">
+          <div className="guided-keypoint-item">
+            <span className="guided-keypoint-title">Sin comparaciones</span>
+            <span className="guided-keypoint-body">
+              No compara llaves entre sí; clasifica operando dígito por dígito en cubetas 0–9.
+            </span>
+          </div>
+          <div className="guided-keypoint-item">
+            <span className="guided-keypoint-title">Estabilidad obligatoria</span>
+            <span className="guided-keypoint-body">
+              Cada vuelta preserva el orden previo asignando offsets exclusivos por núcleo P0..P{p - 1}.
+            </span>
+          </div>
+          <div className="guided-keypoint-item">
+            <span className="guided-keypoint-title">Complejidad garantizada O(d·(n/p + log p))</span>
+            <span className="guided-keypoint-body">
+              Conteo local O(n/p), suma prefija paralela O(log p) y dispersión sin colisiones.
+            </span>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 }

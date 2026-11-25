@@ -871,6 +871,405 @@ const SAMPLE_VISUALIZER_STYLES = `
 }
 `;
 
-export default function SampleSortVisualizer() {
-  return null;
+export default function SampleSortVisualizer({
+  step,
+  numWorkers = 4,
+  arraySize = 8,
+  currentStepIndex = 0,
+  totalSteps = 6,
+  steps = [],
+  onSelectStep,
+  onLoadClassicExample
+}) {
+  const [focusMode, setFocusMode] = useState(false);
+
+  const scene = useMemo(
+    () => deriveSceneData(step, steps, numWorkers, arraySize),
+    [step, steps, numWorkers, arraySize]
+  );
+
+  const effectiveTotalSteps = Math.max(1, totalSteps || steps.length || 6);
+  const phase = normalizePhase(step?.sampleData?.phase, currentStepIndex);
+  const isCompact = scene.n > 16;
+
+  if (!step && (!steps || steps.length === 0)) {
+    return (
+      <div className="guided-visualizer sample-visualizer">
+        <style>{SAMPLE_VISUALIZER_STYLES}</style>
+        <div className="guided-scene">
+          <div className="sample-note">Generando simulación de Sample Sort (MPI)...</div>
+        </div>
+      </div>
+    );
+  }
+
+  const stageTitle = step?.stageName || `Fase: ${PHASE_FALLBACK_LABELS[phase] || 'Sample Sort'}`;
+  const stageDesc =
+    step?.description ||
+    'Cada proceso MPI ordena localmente, extrae muestras para fijar separadores globales y redistribuye los datos mediante All-to-All.';
+
+  return (
+    <div
+      className={`guided-visualizer sample-visualizer${isCompact ? ' compact' : ''}${focusMode ? ' focus-mode' : ''}`}
+    >
+      <style>{SAMPLE_VISUALIZER_STYLES}</style>
+
+      {/* 1. Top Header & Quick Actions */}
+      <div className="guided-header">
+        <div className="guided-tabs" role="tablist" aria-label="Fases de Sample Sort">
+          {(steps.length > 0 ? steps : [step]).map((s, idx) => {
+            const tabPhase = normalizePhase(s?.sampleData?.phase, idx);
+            const label =
+              s?.sampleData?.shortLabel ||
+              s?.shortLabel ||
+              PHASE_FALLBACK_LABELS[tabPhase] ||
+              `Paso ${idx + 1}`;
+            const isActive = idx === currentStepIndex;
+            const isDone = idx < currentStepIndex;
+            return (
+              <button
+                key={idx}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`guided-tab${isActive ? ' active' : ''}${isDone ? ' done' : ''}`}
+                onClick={() => onSelectStep?.(idx)}
+              >
+                <span className="guided-tab-num">{idx + 1}.</span>
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="guided-actions">
+          {onLoadClassicExample && (
+            <button
+              type="button"
+              className="guided-classic-btn"
+              onClick={onLoadClassicExample}
+              title="Cargar ejemplo clásico [7,1,5,3,8,2,6,4] con 2 procesos MPI"
+            >
+              <Sparkles size={13} />
+              <span>Clásico [7,1,5,3,8,2,6,4] (2 MPI)</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            className={`guided-focus-btn${focusMode ? ' active' : ''}`}
+            onClick={() => setFocusMode((prev) => !prev)}
+            aria-pressed={focusMode}
+            title="Alternar modo exposición con celdas ampliadas"
+          >
+            {focusMode ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+            <span>Exposición</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Stage Banner */}
+      <div className="guided-stage-banner">
+        <div className="guided-stage-top">
+          <span className="guided-stage-counter">
+            Paso {currentStepIndex + 1} de {effectiveTotalSteps}
+          </span>
+          <h3 className="guided-stage-title">{stageTitle}</h3>
+        </div>
+        <p className="guided-stage-desc">{stageDesc}</p>
+      </div>
+
+      {/* 3. Interactive Scene rendered per sampleData.phase */}
+      <div className="guided-scene">
+        {/* PHASE: distribute (Reparto) */}
+        {phase === 'distribute' && (
+          <>
+            <div className="sample-section-block">
+              <div className="sample-section-label">Arreglo original</div>
+              <div className="sample-array-row">
+                {scene.originalArray.map((val, idx) => {
+                  const foundRange = scene.chunkRanges.find(
+                    (r) => idx >= r.start && idx < r.end
+                  );
+                  const owner = foundRange ? foundRange.workerId : 0;
+                  const color = getWorkerColor(owner);
+                  return (
+                    <div
+                      key={idx}
+                      className="sample-cell"
+                      style={{
+                        borderColor: hexToRgba(color, 0.5),
+                        background: hexToRgba(color, 0.08)
+                      }}
+                    >
+                      <span>{val}</span>
+                      <span className="sample-cell-sub" style={{ color }}>
+                        [{idx}]
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <ForkConnector numWorkers={scene.p} />
+
+            <div className="sample-lanes">
+              {scene.unsortedChunks.map((chunk, w) => {
+                const color = getWorkerColor(w);
+                return (
+                  <div
+                    key={w}
+                    className="sample-lane"
+                    style={{
+                      borderColor: hexToRgba(color, 0.55),
+                      background: hexToRgba(color, 0.06)
+                    }}
+                  >
+                    <div className="sample-lane-header" style={{ color }}>
+                      <span>PROCESO {w}</span>
+                      <span>P{w} · {chunk.length} elem.</span>
+                    </div>
+                    <div className="sample-lane-cells">
+                      {chunk.length > 0 ? (
+                        chunk.map((val, i) => (
+                          <div
+                            key={i}
+                            className="sample-cell"
+                            style={{
+                              borderColor: hexToRgba(color, 0.65),
+                              background: hexToRgba(color, 0.14)
+                            }}
+                          >
+                            {val}
+                          </div>
+                        ))
+                      ) : (
+                        <span className="sample-empty-pill">Sin elementos</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* PHASE: local_sort (Orden local) */}
+        {phase === 'local_sort' && (
+          <>
+            <div className="sample-lanes">
+              {scene.unsortedChunks.map((chunk, w) => {
+                const color = getWorkerColor(w);
+                return (
+                  <div
+                    key={w}
+                    className="sample-lane"
+                    style={{
+                      borderColor: hexToRgba(color, 0.35),
+                      background: hexToRgba(color, 0.04)
+                    }}
+                  >
+                    <div className="sample-lane-header" style={{ color }}>
+                      <span>PROCESO {w} · entrada</span>
+                      <span>P{w}</span>
+                    </div>
+                    <div className="sample-lane-cells">
+                      {chunk.length > 0 ? (
+                        chunk.map((val, i) => (
+                          <div
+                            key={i}
+                            className="sample-cell"
+                            style={{
+                              borderColor: hexToRgba(color, 0.4),
+                              background: 'rgba(15, 23, 42, 0.9)'
+                            }}
+                          >
+                            {val}
+                          </div>
+                        ))
+                      ) : (
+                        <span className="sample-empty-pill">Sin elementos</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="sample-arrow-down">
+              <ArrowDown size={18} />
+              <span>Ordenamiento local independiente en paralelo</span>
+              <ArrowDown size={18} />
+            </div>
+
+            <div className="sample-lanes">
+              {scene.sortedChunks.map((chunk, w) => {
+                const color = getWorkerColor(w);
+                return (
+                  <div
+                    key={w}
+                    className="sample-lane"
+                    style={{
+                      borderColor: hexToRgba(color, 0.65),
+                      background: hexToRgba(color, 0.08)
+                    }}
+                  >
+                    <div className="sample-lane-header" style={{ color }}>
+                      <span>PROCESO {w} · ordenado</span>
+                      <span>P{w}</span>
+                    </div>
+                    <div className="sample-lane-cells">
+                      {chunk.length > 0 ? (
+                        chunk.map((val, i) => (
+                          <div
+                            key={i}
+                            className="sample-cell"
+                            style={{
+                              borderColor: color,
+                              background: hexToRgba(color, 0.16)
+                            }}
+                          >
+                            {val}
+                          </div>
+                        ))
+                      ) : (
+                        <span className="sample-empty-pill">Sin elementos</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* PHASE: sampling (Muestreo) */}
+        {phase === 'sampling' && (
+          <>
+            <div className="sample-lanes">
+              {scene.sortedChunks.map((chunk, w) => {
+                const color = getWorkerColor(w);
+                const sampledSet = new Set(scene.sampledPositions[w] || []);
+                return (
+                  <div
+                    key={w}
+                    className="sample-lane"
+                    style={{
+                      borderColor: hexToRgba(color, 0.55),
+                      background: hexToRgba(color, 0.06)
+                    }}
+                  >
+                    <div className="sample-lane-header" style={{ color }}>
+                      <span>PROCESO {w} · ordenado</span>
+                      <span>P{w}</span>
+                    </div>
+                    <div className="sample-lane-cells">
+                      {chunk.length > 0 ? (
+                        chunk.map((val, i) => {
+                          const isSampled = sampledSet.has(i);
+                          return (
+                            <div
+                              key={i}
+                              className={`sample-cell${isSampled ? ' pivot sample' : ''}`}
+                              style={
+                                isSampled
+                                  ? undefined
+                                  : {
+                                      borderColor: hexToRgba(color, 0.45),
+                                      background: hexToRgba(color, 0.1)
+                                    }
+                              }
+                            >
+                              {isSampled && <span className="sample-cell-dot">•</span>}
+                              <span>{val}</span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <span className="sample-empty-pill">Sin elementos</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="sample-note">
+              Muestras: [{scene.rawSamples.join(', ')}]
+            </div>
+
+            <div className="sample-tag amber">
+              <span>• Intervalo regular · muestras representativas</span>
+            </div>
+          </>
+        )}
+
+        {/* PHASE: splitters (Pivote) */}
+        {phase === 'splitters' && (
+          <>
+            <div className="sample-section-block">
+              <div className="sample-section-label">Muestras reunidas y ordenadas</div>
+              <div className="sample-array-row">
+                {scene.sortedSamples.length > 0 ? (
+                  scene.sortedSamples.map((val, idx) => {
+                    const isSplitter = scene.splitterSampleIndices.includes(idx);
+                    return (
+                      <div
+                        key={idx}
+                        className={`sample-cell${isSplitter ? ' pivot' : ''}`}
+                      >
+                        {isSplitter && <span className="sample-cell-dot">•</span>}
+                        <span>{val}</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <span className="sample-empty-pill">Sin muestras disponibles</span>
+                )}
+              </div>
+            </div>
+
+            <div className="sample-tag amber">
+              <span>
+                Divisor(es): {scene.splitters.length > 0 ? scene.splitters.join(', ') : '—'} · difundido(s) a los procesos
+              </span>
+            </div>
+
+            <div className="sample-lanes">
+              {Array.from({ length: scene.p }, (_, w) => {
+                const color = getWorkerColor(w);
+                const rangeText =
+                  scene.targetRanges[w]?.label ||
+                  formatRangeLabel(w, scene.splitters, scene.p);
+                return (
+                  <div
+                    key={w}
+                    className="sample-lane"
+                    style={{
+                      borderColor: hexToRgba(color, 0.6),
+                      background: hexToRgba(color, 0.08)
+                    }}
+                  >
+                    <div className="sample-lane-header" style={{ color }}>
+                      <span>PROCESO {w} · rango {rangeText}</span>
+                      <span>P{w}</span>
+                    </div>
+                    <div className="sample-note" style={{ textAlign: 'left', fontStyle: 'normal' }}>
+                      Acepta valores en <strong style={{ color }}>{rangeText}</strong>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="sample-note">
+              Los rangos muestran qué valores recibirá cada proceso, no sus datos actuales.
+            </div>
+          </>
+        )}
+
+      </div>
+    </div>
+  );
 }

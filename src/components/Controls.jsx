@@ -93,6 +93,11 @@ export default function Controls({
               value={arraySize}
               onChange={(e) => setArraySize(Number(e.target.value))}
             >
+              {!currentAlgoMeta.suitableSizes.includes(arraySize) && (
+                <option key={arraySize} value={arraySize}>
+                  N = {arraySize} elementos (Clásico)
+                </option>
+              )}
               {currentAlgoMeta.suitableSizes.map((size) => (
                 <option key={size} value={size}>
                   N = {size} elementos

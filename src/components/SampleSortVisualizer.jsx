@@ -1269,7 +1269,270 @@ export default function SampleSortVisualizer({
           </>
         )}
 
+        {/* PHASE: exchange (Intercambio) */}
+        {phase === 'exchange' && (
+          <>
+            {/* Top lanes: before exchange, colored by destination process */}
+            <div className="sample-lanes">
+              {scene.beforeExchangeLanes.map((lane, w) => {
+                const srcColor = getWorkerColor(w);
+                return (
+                  <div
+                    key={w}
+                    className="sample-lane"
+                    style={{
+                      borderColor: hexToRgba(srcColor, 0.45),
+                      background: hexToRgba(srcColor, 0.05)
+                    }}
+                  >
+                    <div className="sample-lane-header" style={{ color: srcColor }}>
+                      <span>PROCESO {w} · antes</span>
+                      <span>Destino por color</span>
+                    </div>
+                    <div className="sample-lane-cells">
+                      {lane.length > 0 ? (
+                        lane.map((item, i) => {
+                          const destColor = getWorkerColor(item.destWorker);
+                          return (
+                            <div
+                              key={i}
+                              className="sample-cell"
+                              style={{
+                                borderColor: destColor,
+                                background: hexToRgba(destColor, 0.16)
+                              }}
+                              title={`Valor ${item.val}: de P${w} hacia P${item.destWorker}`}
+                            >
+                              <span>{item.val}</span>
+                              <span className="sample-cell-sub" style={{ color: destColor }}>
+                                →P{item.destWorker}
+                              </span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <span className="sample-empty-pill">Sin elementos</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Middle exchange flow bar */}
+            <div className="sample-exchange-flow">
+              {scene.p === 2 ? (
+                (() => {
+                  const p1ToP0 = scene.moves.find((m) => m.from === 1 && m.to === 0);
+                  const p0ToP1 = scene.moves.find((m) => m.from === 0 && m.to === 1);
+                  return (
+                    <>
+                      <span
+                        className="sample-flow-pill"
+                        style={{ borderColor: hexToRgba(getWorkerColor(0), 0.55), color: getWorkerColor(0) }}
+                      >
+                        <ArrowLeft size={13} />
+                        {p1ToP0
+                          ? `${p1ToP0.values.join(', ')} · de P1 a P0`
+                          : '0 valores · de P1 a P0'}
+                      </span>
+                      <span
+                        className="sample-flow-pill"
+                        style={{ borderColor: hexToRgba(getWorkerColor(1), 0.55), color: getWorkerColor(1) }}
+                      >
+                        {p0ToP1
+                          ? `${p0ToP1.values.join(', ')} · de P0 a P1`
+                          : '0 valores · de P0 a P1'}
+                        <ArrowRight size={13} />
+                      </span>
+                    </>
+                  );
+                })()
+              ) : scene.moves.length > 0 ? (
+                scene.moves.map((m, idx) => {
+                  const destColor = getWorkerColor(m.to);
+                  return (
+                    <span
+                      key={idx}
+                      className="sample-flow-pill"
+                      style={{ borderColor: hexToRgba(destColor, 0.55), color: destColor }}
+                    >
+                      <span>P{m.from}</span>
+                      <ArrowRight size={12} />
+                      <span>P{m.to}:</span>
+                      <strong>{m.values.join(', ')}</strong>
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="sample-note">Todos los datos ya estaban en su proceso destino.</span>
+              )}
+            </div>
+
+            {/* Bottom lanes: after exchange, showing received sorted sub-blocks */}
+            <div className="sample-lanes">
+              {scene.receivedBlocksByWorker.map((blocks, w) => {
+                const color = getWorkerColor(w);
+                const flatReceived = blocks.flatMap((b) =>
+                  b.values.map((val) => ({ val, from: b.from }))
+                );
+                const blocksSummary =
+                  blocks.length > 0
+                    ? blocks.map((b) => `[${b.values.join(', ')}]`).join(' + ')
+                    : '[]';
+                return (
+                  <div
+                    key={w}
+                    className="sample-lane"
+                    style={{
+                      borderColor: hexToRgba(color, 0.65),
+                      background: hexToRgba(color, 0.08)
+                    }}
+                  >
+                    <div className="sample-lane-header" style={{ color }}>
+                      <span>PROCESO {w} · después</span>
+                      <span>P{w}</span>
+                    </div>
+                    <div className="sample-lane-cells">
+                      {flatReceived.length > 0 ? (
+                        flatReceived.map((item, i) => (
+                          <div
+                            key={i}
+                            className="sample-cell"
+                            style={{
+                              borderColor: color,
+                              background: hexToRgba(color, 0.16)
+                            }}
+                          >
+                            <span>{item.val}</span>
+                            <span className="sample-cell-sub" style={{ color: getWorkerColor(item.from) }}>
+                              de P{item.from}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="sample-empty-pill">Cubeta vacía</span>
+                      )}
+                    </div>
+                    <div className="sample-blocks-meta">
+                      Bloques: {blocksSummary}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* PHASE: merge (Fusión) */}
+        {phase === 'merge' && (
+          <>
+            <div className="sample-lanes">
+              {scene.mergedLanes.map((vals, w) => {
+                const color = getWorkerColor(w);
+                return (
+                  <div
+                    key={w}
+                    className="sample-lane"
+                    style={{
+                      borderColor: hexToRgba(color, 0.65),
+                      background: hexToRgba(color, 0.08)
+                    }}
+                  >
+                    <div className="sample-lane-header" style={{ color }}>
+                      <span>PROCESO {w} · ordenado</span>
+                      <span>P{w}</span>
+                    </div>
+                    <div className="sample-lane-cells">
+                      {vals.length > 0 ? (
+                        vals.map((val, i) => (
+                          <div
+                            key={i}
+                            className="sample-cell"
+                            style={{
+                              borderColor: color,
+                              background: hexToRgba(color, 0.16)
+                            }}
+                          >
+                            {val}
+                          </div>
+                        ))
+                      ) : (
+                        <span className="sample-empty-pill">Cubeta vacía</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="sample-arrow-down">
+              <ArrowDown size={18} />
+              <span>Concatenación lógica por rango entre procesos</span>
+              <ArrowDown size={18} />
+            </div>
+
+            <div className="sample-section-block">
+              <div className="sample-section-label">Orden global por rango (vista lógica)</div>
+              <div className="sample-global-row">
+                {scene.globalOrdered.map((item, idx) => {
+                  const color = getWorkerColor(item.workerId);
+                  return (
+                    <div
+                      key={idx}
+                      className="sample-cell"
+                      style={{
+                        borderColor: color,
+                        background: hexToRgba(color, 0.16)
+                      }}
+                    >
+                      <span>{item.val}</span>
+                      <span className="sample-cell-sub" style={{ color }}>
+                        P{item.workerId}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="sample-tag emerald">
+              <CheckCircle2 size={14} />
+              <span>✓ Ordenamiento completo · datos distribuidos</span>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* 4. Bottom Summary Cards */}
+      <div className="guided-summary-grid">
+        <div className="guided-summary-card">
+          <div className="guided-summary-label">
+            <Lightbulb size={13} />
+            <span>Idea clave</span>
+          </div>
+          <div className="guided-summary-value">
+            Las muestras definen rangos; MPI mueve los datos al proceso responsable de cada rango.
+          </div>
+        </div>
+
+        <div className="guided-summary-card">
+          <div className="guided-summary-label">
+            <Network size={13} />
+            <span>Complejidad (carga equilibrada, n ≫ p³)</span>
+          </div>
+          <div className="guided-summary-value" style={{ fontFamily: 'var(--font-mono, monospace)' }}>
+            O(n log n / p) + comunicación MPI Allgather / Alltoall
+          </div>
+        </div>
+      </div>
+
+      {!focusMode && (
+        <div className="guided-hint-footer">
+          <Cpu size={12} style={{ display: 'inline', verticalAlign: '-2px', marginRight: '5px' }} />
+          Haz clic en cualquier fase superior para saltar directamente o activa Exposición para ampliar celdas.
+        </div>
+      )}
     </div>
   );
 }

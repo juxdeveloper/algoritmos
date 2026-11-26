@@ -14,7 +14,12 @@ import TheoryModal from './components/TheoryModal';
 import { PARALLEL_ALGORITHMS } from './algorithms';
 import { BarChart3, Clock, Share2, Network, Grid, Terminal, ArrowUpDown } from 'lucide-react';
 
-const CLASSIC_BITONIC_8 = [27, 32, 18, 24, 22, 4, 43, 30];
+const CLASSIC_EXAMPLES = {
+  bitonic: { data: [27, 32, 18, 24, 22, 4, 43, 30], size: 8, workers: null },
+  quicksort: { data: [8, 3, 1, 7, 5, 2, 9], size: 7, workers: 2 },
+  radix: { data: [42, 15, 82, 31, 95, 21, 65, 12], size: 8, workers: 2 },
+  samplesort: { data: [7, 1, 5, 3, 8, 2, 6, 4], size: 8, workers: 2 }
+};
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('simulator'); // 'simulator' | 'race' | 'amdahl' | 'theory'
@@ -36,7 +41,7 @@ export default function App() {
 
   // Timer ref for playback
   const playbackTimerRef = useRef(null);
-  const pendingCustomDataRef = useRef(null);
+  const pendingCustomRunRef = useRef(null);
 
   // Helper to generate initial data
   const generateInitialData = useCallback((size, dist) => {
@@ -63,17 +68,34 @@ export default function App() {
   // Re-generate steps when algorithm, size, workers, or distribution changes
   const regenerateSteps = useCallback((customData = null) => {
     const algoDef = PARALLEL_ALGORITHMS[selectedAlgo] || PARALLEL_ALGORITHMS.mergesort;
+    const pending = pendingCustomRunRef.current;
 
-    // Check size validity for algorithm
+    // Check size validity for algorithm (allow pending/custom classic preset sizes)
     let validSize = arraySize;
-    if (!algoDef.suitableSizes.includes(validSize)) {
+    const isPendingSize = !customData && pending && pending.size === arraySize;
+    const isCustomSize = customData && customData.length === arraySize;
+    if (!isPendingSize && !isCustomSize && !algoDef.suitableSizes.includes(validSize)) {
       validSize = algoDef.defaultSize || algoDef.suitableSizes[0];
       setArraySize(validSize);
     }
 
-    const pendingData = pendingCustomDataRef.current;
-    pendingCustomDataRef.current = null;
-    const data = customData || pendingData || generateInitialData(validSize, distribution);
+    let data = null;
+    if (customData) {
+      pendingCustomRunRef.current = null;
+      data = customData;
+    } else if (pending) {
+      const sizeMatches = pending.size === validSize;
+      const workersMatches = pending.workers == null || pending.workers === numWorkers;
+      if (sizeMatches && workersMatches) {
+        data = pending.data;
+        pendingCustomRunRef.current = null;
+      }
+    }
+
+    if (!data) {
+      data = generateInitialData(validSize, distribution);
+    }
+
     try {
       const generated = algoDef.generate(data, numWorkers);
       setSteps(generated);
@@ -86,11 +108,18 @@ export default function App() {
 
   // Handle algorithm switch: reset visualizer subtab if previous tab not supported
   const handleSelectAlgo = (newAlgoId) => {
+    pendingCustomRunRef.current = null;
     setSelectedAlgo(newAlgoId);
     const newAlgoDef = PARALLEL_ALGORITHMS[newAlgoId];
     if (newAlgoDef?.hasBitonicView) {
       setArraySize(newAlgoDef.defaultSize || 8);
       setVisualizerSubtab('bitonic');
+      return;
+    }
+
+    if (newAlgoDef?.hasGuidedView) {
+      setArraySize(newAlgoDef.defaultSize || 8);
+      setVisualizerSubtab('structure');
       return;
     }
 
@@ -151,19 +180,30 @@ export default function App() {
     setCurrentStepIndex(0);
   };
 
+  const handleSelectStep = (idx) => {
+    setIsPlaying(false);
+    setCurrentStepIndex(Math.max(0, Math.min(steps.length - 1, idx)));
+  };
+
   const handleShuffle = () => {
+    pendingCustomRunRef.current = null;
     setIsPlaying(false);
     const newData = generateInitialData(arraySize, distribution);
     regenerateSteps(newData);
   };
 
-  const handleLoadClassicBitonic = () => {
+  const handleLoadClassicExample = (algoId = selectedAlgo) => {
+    const preset = CLASSIC_EXAMPLES[algoId];
+    if (!preset) return;
     setIsPlaying(false);
-    if (arraySize !== 8) {
-      pendingCustomDataRef.current = CLASSIC_BITONIC_8;
-      setArraySize(8);
+    const needSizeChange = preset.size !== arraySize;
+    const needWorkersChange = preset.workers != null && preset.workers !== numWorkers;
+    if (needSizeChange || needWorkersChange) {
+      pendingCustomRunRef.current = preset;
+      if (needSizeChange) setArraySize(preset.size);
+      if (needWorkersChange) setNumWorkers(preset.workers);
     } else {
-      regenerateSteps(CLASSIC_BITONIC_8);
+      regenerateSteps(preset.data);
     }
   };
 
@@ -195,6 +235,7 @@ export default function App() {
   const currentAlgoDef = PARALLEL_ALGORITHMS[selectedAlgo] || PARALLEL_ALGORITHMS.mergesort;
 
   const hasStructure =
+    currentAlgoDef.hasGuidedView ||
     currentAlgoDef.hasMeshView ||
     currentAlgoDef.hasSampleView ||
     currentAlgoDef.hasRadixView ||
@@ -254,6 +295,16 @@ export default function App() {
                       </button>
                     )}
 
+                    {hasStructure && currentAlgoDef.hasGuidedView && (
+                      <button
+                        className={`subtab-btn ${visualizerSubtab === 'structure' ? 'active' : ''}`}
+                        onClick={() => setVisualizerSubtab('structure')}
+                      >
+                        <Grid size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                        Vista Guiada
+                      </button>
+                    )}
+
                     <button
                       className={`subtab-btn ${visualizerSubtab === 'bars' ? 'active' : ''}`}
                       onClick={() => setVisualizerSubtab('bars')}
@@ -280,7 +331,7 @@ export default function App() {
                       </button>
                     )}
 
-                    {hasStructure && (
+                    {hasStructure && !currentAlgoDef.hasGuidedView && (
                       <button
                         className={`subtab-btn ${visualizerSubtab === 'structure' ? 'active' : ''}`}
                         onClick={() => setVisualizerSubtab('structure')}
@@ -301,7 +352,7 @@ export default function App() {
                     currentStepIndex={currentStepIndex}
                     totalSteps={steps.length}
                     onStepForward={handleStepForward}
-                    onLoadClassicExample={handleLoadClassicBitonic}
+                    onLoadClassicExample={() => handleLoadClassicExample('bitonic')}
                   />
                 )}
 
@@ -322,6 +373,12 @@ export default function App() {
                     algoId={selectedAlgo}
                     step={currentStep}
                     numWorkers={numWorkers}
+                    arraySize={arraySize}
+                    currentStepIndex={currentStepIndex}
+                    totalSteps={steps.length}
+                    steps={steps}
+                    onSelectStep={handleSelectStep}
+                    onLoadClassicExample={() => handleLoadClassicExample(selectedAlgo)}
                   />
                 )}
               </div>

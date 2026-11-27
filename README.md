@@ -34,14 +34,17 @@ El proyecto permite no solo ver el movimiento de los datos paso a paso o en tiem
 - **Visualizador de Barras Concurrente:** Cada barra indica su valor numérico, índice y el núcleo asignado ($P_i$). Identifica operaciones de comparación (amarillo) e intercambio (rojo) simultáneas.
 - **Línea de Tiempo Gantt:** Muestra la utilización y estado exacto de cada hilo en cada instante de tiempo (comparando, particionando, mezclando, barrera de sincronización o inactivo).
 - **Red de Comparadores Alambrada (Sorting Network):** Dibuja los cables de datos horizontales y los comparadores verticales concurrentes para Bitonic Sort.
-- **Mapa Bitónico Guiado (para Bitonic Sort):** Vista didáctica paso a paso que inicia con el ejemplo clásico de 8 elementos ($N = 8$) y organiza cada etapa según el tamaño de bloque $k$ (`↑ Asc` / `↓ Desc`) y el salto de comparación $d$:
-  - *Fila original de referencia y selector `Antes` / `Después`:* conserva el arreglo original como referencia fija y permite alternar entre el estado previo y posterior al paso actual.
-  - *Arcos mariposa (SVG):* traza arcos SVG entre cada pareja comparada a distancia $d$ dentro de cada bloque, destacando intercambios efectivos y comparaciones sin cambio.
-  - *Tarjetas por núcleo ($P_i$):* muestra las parejas asignadas a cada procesador, su dirección (`↑ Asc` o `↓ Desc`) y el resultado de cada comparación concurrente.
-- **Estructura Concurrente:**
-  - *Árbol de Reducción / Fork-Join (MergeSort, QuickSort y Bucket Sort):* visualiza la jerarquía de subproblemas divididos, fusión binaria y distribución en cubetas concurrentes.
-  - *Sample Sort:* muestra la fase de muestreo local, cálculo de separadores (splitters) globales e intercambio All-to-All.
-  - *Radix Sort:* ilustra el conteo de dígitos y el árbol de sumas de prefijo (Parallel Scan).
+- **Vistas Guiadas Interactivas Paso a Paso (`Mapa Bitónico` y `Vista Guiada`):** vistas didácticas con ejemplos clásicos precargables, navegación directa por etapas y explicación sincronizada del estado de cada núcleo:
+  - **Mapa Bitónico Guiado (Bitonic Sort):** inicia con el ejemplo clásico de 8 elementos ($N = 8$) y organiza cada etapa según el tamaño de bloque $k$ (`↑ Asc` / `↓ Desc`) y el salto de comparación $d$:
+    - *Fila original de referencia y selector `Antes` / `Después`:* conserva el arreglo original como referencia fija y permite alternar entre el estado previo y posterior al paso actual.
+    - *Arcos mariposa (SVG):* traza arcos SVG entre cada pareja comparada a distancia $d$ dentro de cada bloque, destacando intercambios efectivos y comparaciones sin cambio.
+    - *Tarjetas por núcleo ($P_i$):* muestra las parejas asignadas a cada procesador, su dirección (`↑ Asc` o `↓ Desc`) y el resultado de cada comparación concurrente.
+  - **Vista Guiada de Parallel QuickSort:** árbol Fork-Join interactivo sobre el ejemplo clásico de 7 elementos con 2 núcleos ($P_0, P_1$), mostrando la elección de pivote, la partición en subarreglos menores/mayores, el despacho concurrente de ramas y su ensamblado final.
+  - **Vista Guiada de Parallel Radix Sort:** simulador paso a paso por dígito (unidades y decenas) sobre el ejemplo clásico de 8 elementos con 2 núcleos, ilustrando el histograma local de conteo, la matriz de sumas de prefijo (*Parallel Scan*) y la dispersión concurrente a posiciones exactas.
+  - **Vista Guiada de Sample Sort (MPI):** recorrido guiado por fases distribuidas sobre el ejemplo clásico de 8 elementos con 2 procesos, visualizando el ordenamiento local, el muestreo regular, los separadores globales (*splitters*), el intercambio *All-to-All* y la mezcla final.
+- **Estructura Concurrente (MergeSort y Bucket Sort):**
+  - *Árbol de Reducción / Fork-Join (Parallel MergeSort):* visualiza la jerarquía de subproblemas divididos y las etapas de fusión binaria concurrente.
+  - *Distribución en Cubetas (Parallel Bucket Sort):* muestra los rangos asignados por cubeta, la dispersión paralela y el ordenamiento local sin contención.
 - **Consola de Código Sincronizada:** Muestra la implementación canónica en Python/pseudocódigo resaltando la línea exacta en ejecución en cada paso.
 
 ### 2. Arena de Carreras (Side-by-Side Race Arena)
